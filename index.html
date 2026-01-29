@@ -7,17 +7,21 @@
   <link href="/style.css" rel="stylesheet" />
 </head>
 <body>
-  <div class="bg-grid"></div>
+  <div class="bg-soft"></div>
   <header class="topbar">
     <div class="brand">
-      <div class="logo">AD</div>
-      <div>
-        <h1>쿠팡 광고 리포트 분석기</h1>
-        <p>엑셀 업로드 → 분석 → 저장 (브라우저 전용)</p>
-      </div>
+      <div class="logo">SP</div>
+      <h1>SECRET PANG</h1>
     </div>
+    <nav class="nav">
+      <button class="nav-item active" data-view="dashboard">대시보드</button>
+      <button class="nav-item" data-view="campaign">광고 캠페인 분석</button>
+      <button class="nav-item" disabled>광고성과 검색</button>
+      <button class="nav-item" disabled>마진계산기</button>
+      <button class="nav-item" disabled>설정</button>
+    </nav>
     <div class="actions">
-      <label class="file-btn">
+      <label class="file-btn ghost">
         엑셀 업로드
         <input id="fileInput" type="file" accept=".xlsx,.xls" />
       </label>
@@ -30,6 +34,8 @@
         저장 불러오기
         <input id="loadJsonInput" type="file" accept=".json" />
       </label>
+      <div class="icon-btn">🔔</div>
+      <div class="icon-btn">👤</div>
     </div>
   </header>
 
@@ -42,50 +48,115 @@
     <p class="hint">필수 항목: 캠페인, 노출수, 클릭, 주문, 광고비, 광고매출</p>
   </section>
 
-  <main class="layout">
-    <aside class="panel list-panel">
-      <div class="panel-head">
-        <h2>캠페인</h2>
-        <input id="campaignSearch" type="search" placeholder="캠페인 검색" />
-      </div>
-      <div id="campaignList" class="list"></div>
-    </aside>
-
-    <section class="panel detail-panel">
-      <div id="emptyState" class="empty">
-        <h2>리포트를 업로드하세요</h2>
-        <p>쿠팡 광고보고서 엑셀 파일을 업로드하면 분석이 시작됩니다.</p>
-      </div>
-
-      <div id="detailWrap" class="hidden">
-        <div class="summary">
-          <div>
-            <h2 id="campaignTitle">캠페인</h2>
-            <p id="campaignMeta" class="muted"></p>
-          </div>
-          <div class="summary-cards" id="summaryCards"></div>
+  <main class="dashboard" id="dashboardView">
+    <section class="panel filter-panel">
+      <div class="filter-row">
+        <div class="field">
+          <label>시작 날짜</label>
+          <input id="startDate" type="date" />
         </div>
-
-        <div class="tabs" id="tabs">
-          <button data-tab="base" class="active">기본 통계</button>
-          <button data-tab="sold">팔린 옵션</button>
-          <button data-tab="options">전체 옵션</button>
-          <button data-tab="keywords">전체 키워드</button>
-          <button data-tab="excluded">제외 키워드</button>
+        <div class="field">
+          <label>종료 날짜</label>
+          <input id="endDate" type="date" />
         </div>
-
-        <div class="tab-content">
-          <div id="tab-base" class="tab-panel"></div>
-          <div id="tab-sold" class="tab-panel hidden"></div>
-          <div id="tab-options" class="tab-panel hidden"></div>
-          <div id="tab-keywords" class="tab-panel hidden"></div>
-          <div id="tab-excluded" class="tab-panel hidden"></div>
+        <button id="applyDate" class="primary">검색</button>
+        <div class="quick-group">
+          <button data-range="prev" class="ghost">◀</button>
+          <button data-range="next" class="ghost">▶</button>
+          <button data-range="yesterday">어제</button>
+          <button data-range="3d">3일</button>
+          <button data-range="1w" class="active">1주</button>
+          <button data-range="2w">2주</button>
+          <button data-range="1m">1달</button>
+          <button data-range="2m">2달</button>
+          <button data-range="this">이번달</button>
+          <button data-range="last">지난달</button>
         </div>
       </div>
+    </section>
+
+    <section id="emptyState" class="panel empty">
+      <h2>리포트를 업로드하세요</h2>
+      <p>쿠팡 광고보고서 엑셀 파일을 업로드하면 대시보드가 생성됩니다.</p>
+    </section>
+
+    <section id="dashboardWrap" class="hidden">
+      <div class="kpi-grid" id="kpiGrid"></div>
+      <section class="panel chart-panel">
+        <div class="panel-head">
+          <h2>통합 추이</h2>
+        </div>
+        <canvas id="trendChart"></canvas>
+      </section>
+    </section>
+  </main>
+
+  <main class="campaign hidden" id="campaignView">
+    <section class="panel campaign-head">
+      <div class="campaign-title">
+        <select id="campaignSelect"></select>
+        <div class="campaign-actions">
+          <button class="ghost">캠페인 설정</button>
+          <button class="ghost">광고그룹 설정</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="campaign-tabs" id="campaignTabs">
+      <button data-tab="base" class="active">기본통계</button>
+      <button data-tab="sold">팔린 옵션</button>
+      <button data-tab="options">전체 옵션</button>
+      <button data-tab="keywords">전체 키워드</button>
+      <button data-tab="excluded">제외 키워드 <span id="excludedCount" class="badge">0</span></button>
+      <button data-tab="manual">수동 입찰가 관리 <span class="badge">0</span></button>
+    </div>
+
+    <section class="panel filter-panel">
+      <div class="filter-row">
+        <div class="field">
+          <label>시작 날짜</label>
+          <input id="startDateCampaign" type="date" />
+        </div>
+        <div class="field">
+          <label>종료 날짜</label>
+          <input id="endDateCampaign" type="date" />
+        </div>
+        <button id="applyDateCampaign" class="primary">검색</button>
+        <div class="quick-group" id="campaignQuickGroup">
+          <button data-range="prev" class="ghost">◀</button>
+          <button data-range="next" class="ghost">▶</button>
+          <button data-range="yesterday">어제</button>
+          <button data-range="3d">3일</button>
+          <button data-range="1w" class="active">1주</button>
+          <button data-range="2w">2주</button>
+          <button data-range="1m">1달</button>
+          <button data-range="2m">2달</button>
+          <button data-range="this">이번달</button>
+          <button data-range="last">지난달</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="campaignContent">
+      <div class="content-head">
+        <div>
+          <h2 id="campaignSectionTitle">기본통계</h2>
+          <p id="campaignSectionDesc" class="muted"></p>
+        </div>
+        <button class="ghost">메모</button>
+      </div>
+
+      <div id="tab-base" class="tab-panel"></div>
+      <div id="tab-sold" class="tab-panel hidden"></div>
+      <div id="tab-options" class="tab-panel hidden"></div>
+      <div id="tab-keywords" class="tab-panel hidden"></div>
+      <div id="tab-excluded" class="tab-panel hidden"></div>
+      <div id="tab-manual" class="tab-panel hidden"></div>
     </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script defer src="/main.js"></script>
 </body>
 </html>

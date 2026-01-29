@@ -6,6 +6,10 @@ const state = {
   campaigns: [],
   selectedCampaign: null,
   window: "1d",
+  chart: null,
+  dateRange: { start: null, end: null },
+  view: "dashboard",
+  keywordFilter: "",
 };
 
 const REQUIRED_FIELDS = [
@@ -103,7 +107,16 @@ const REQUIRED_FIELDS = [
     key: "optionId",
     label: "옵션ID",
     required: false,
-    guesses: ["광고전환매출발생옵션id", "광고전환매출발생옵션ID", "광고집행옵션id", "광고집행옵션ID", "옵션id", "옵션 ID", "옵션번호", "option id"],
+    guesses: [
+      "광고전환매출발생옵션id",
+      "광고전환매출발생옵션ID",
+      "광고집행옵션id",
+      "광고집행옵션ID",
+      "옵션id",
+      "옵션 ID",
+      "옵션번호",
+      "option id",
+    ],
   },
   {
     key: "optionName",
@@ -122,7 +135,7 @@ const REQUIRED_FIELDS = [
   },
   {
     key: "saleDate",
-    label: "판매일",
+    label: "날짜",
     required: false,
     guesses: ["날짜", "판매일", "주문일", "date"],
   },
@@ -136,19 +149,30 @@ const els = {
   mappingPanel: document.getElementById("mappingPanel"),
   mappingGrid: document.getElementById("mappingGrid"),
   applyMapping: document.getElementById("applyMapping"),
-  campaignList: document.getElementById("campaignList"),
-  campaignSearch: document.getElementById("campaignSearch"),
   emptyState: document.getElementById("emptyState"),
-  detailWrap: document.getElementById("detailWrap"),
-  campaignTitle: document.getElementById("campaignTitle"),
-  campaignMeta: document.getElementById("campaignMeta"),
-  summaryCards: document.getElementById("summaryCards"),
-  tabs: document.getElementById("tabs"),
+  dashboardWrap: document.getElementById("dashboardWrap"),
+  kpiGrid: document.getElementById("kpiGrid"),
+  trendChart: document.getElementById("trendChart"),
+  startDate: document.getElementById("startDate"),
+  endDate: document.getElementById("endDate"),
+  applyDate: document.getElementById("applyDate"),
+  dashboardView: document.getElementById("dashboardView"),
+  campaignView: document.getElementById("campaignView"),
+  campaignSelect: document.getElementById("campaignSelect"),
+  campaignTabs: document.getElementById("campaignTabs"),
+  campaignSectionTitle: document.getElementById("campaignSectionTitle"),
+  campaignSectionDesc: document.getElementById("campaignSectionDesc"),
   tabBase: document.getElementById("tab-base"),
   tabSold: document.getElementById("tab-sold"),
   tabOptions: document.getElementById("tab-options"),
   tabKeywords: document.getElementById("tab-keywords"),
   tabExcluded: document.getElementById("tab-excluded"),
+  tabManual: document.getElementById("tab-manual"),
+  excludedCount: document.getElementById("excludedCount"),
+  startDateCampaign: document.getElementById("startDateCampaign"),
+  endDateCampaign: document.getElementById("endDateCampaign"),
+  applyDateCampaign: document.getElementById("applyDateCampaign"),
+  campaignQuickGroup: document.getElementById("campaignQuickGroup"),
 };
 
 const fmtNumber = (value, digits = 0) =>
@@ -212,6 +236,28 @@ const loadExcluded = (campaignName) => {
 
 const saveExcluded = (campaignName, list) => {
   localStorage.setItem(getStorageKey(campaignName), JSON.stringify(list));
+};
+
+const parseDate = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  const text = String(value).trim();
+  if (!text) return null;
+  const normalized = text.replace(/[./]/g, "-");
+  const parts = normalized.split("-").map((v) => parseInt(v, 10));
+  if (parts.length >= 3 && parts.every((v) => Number.isFinite(v))) {
+    const [y, m, d] = parts;
+    return new Date(y, m - 1, d);
+  }
+  const parsed = new Date(text);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const dateToKey = (date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 };
 
 const handleFile = async (file) => {
@@ -318,85 +364,52 @@ const normalizeRows = () => {
 
 const buildCampaigns = () => {
   const map = new Map();
-
   state.normalized.forEach((row) => {
     const key = row.campaign || "미분류";
     if (!map.has(key)) {
-      map.set(key, {
-        name: key,
-        rows: [],
-        totals: { impressions: 0, clicks: 0, orders: 0, cost: 0, revenue: 0, sales: 0 },
-      });
+      map.set(key, { name: key, rows: [] });
     }
-    const campaign = map.get(key);
-    campaign.rows.push(row);
-    campaign.totals.impressions += row.impressions;
-    campaign.totals.clicks += row.clicks;
-    campaign.totals.orders += row.orders;
-    campaign.totals.cost += row.cost;
-    campaign.totals.revenue += row.revenue;
-    campaign.totals.sales += row.sales;
+    map.get(key).rows.push(row);
   });
-
-  state.campaigns = Array.from(map.values()).map((campaign) => ({
-    ...campaign,
-    metrics: buildMetric(campaign.totals),
-  }));
-
-  renderCampaignList();
+  state.campaigns = Array.from(map.values());
 };
 
-const renderCampaignList = () => {
-  const query = els.campaignSearch.value.trim().toLowerCase();
-  els.campaignList.innerHTML = "";
-
-  const filtered = state.campaigns.filter((campaign) =>
-    campaign.name.toLowerCase().includes(query)
+const buildTotals = (rows) => {
+  return rows.reduce(
+    (acc, row) => {
+      acc.impressions += row.impressions;
+      acc.clicks += row.clicks;
+      acc.orders += row.orders;
+      acc.cost += row.cost;
+      acc.revenue += row.revenue;
+      acc.sales += row.sales;
+      return acc;
+    },
+    { impressions: 0, clicks: 0, orders: 0, cost: 0, revenue: 0, sales: 0 }
   );
+};
 
-  filtered.forEach((campaign) => {
-    const item = document.createElement("div");
-    item.className = "list-item";
-    if (state.selectedCampaign && state.selectedCampaign.name === campaign.name) {
-      item.classList.add("active");
-    }
-    const title = document.createElement("h3");
-    title.textContent = campaign.name;
-    const meta = document.createElement("div");
-    meta.className = "meta";
-    meta.textContent = `ROAS ${fmtNumber(campaign.metrics.roas, 2)}% · 광고비 ${fmtNumber(
-      campaign.totals.cost
-    )}원`;
-
-    item.appendChild(title);
-    item.appendChild(meta);
-    item.addEventListener("click", () => selectCampaign(campaign.name));
-    els.campaignList.appendChild(item);
+const filterRowsByDate = (rows) => {
+  const { start, end } = state.dateRange;
+  if (!start || !end) return rows;
+  return rows.filter((row) => {
+    const date = parseDate(row.saleDate);
+    if (!date) return false;
+    return date >= start && date <= end;
   });
 };
 
-const renderSummary = (campaign) => {
-  els.campaignTitle.textContent = campaign.name;
-  els.campaignMeta.textContent = `행 수 ${campaign.rows.length} · 판매량 ${fmtNumber(
-    campaign.totals.sales
-  )}`;
-
-  const metrics = campaign.metrics;
+const renderKpis = (totals) => {
+  const metrics = buildMetric(totals);
   const cards = [
-    { label: "ROAS", value: fmtPercent(metrics.roas) },
-    { label: "CPC", value: `${fmtNumber(metrics.cpc, 2)}원` },
-    { label: "클릭률", value: fmtPercent(metrics.ctr) },
-    { label: "전환율", value: fmtPercent(metrics.cvr) },
-    { label: "광고비", value: `${fmtNumber(campaign.totals.cost)}원` },
-    { label: "광고매출", value: `${fmtNumber(campaign.totals.revenue)}원` },
-    { label: "전환당비용", value: `${fmtNumber(metrics.cpa, 2)}원` },
-    { label: "객단가", value: `${fmtNumber(metrics.aov, 2)}원` },
+    { label: "광고비 지출", value: `${fmtNumber(totals.cost)}원` },
+    { label: "광고매출", value: `${fmtNumber(totals.revenue)}원` },
+    { label: "광고매출 ROAS", value: fmtPercent(metrics.roas) },
   ];
-
-  els.summaryCards.innerHTML = cards
+  els.kpiGrid.innerHTML = cards
     .map(
       (card) => `
-        <div class="card">
+        <div class="kpi-card">
           <div class="label">${card.label}</div>
           <div class="value">${card.value}</div>
         </div>`
@@ -404,9 +417,143 @@ const renderSummary = (campaign) => {
     .join("");
 };
 
-const renderBaseStats = (campaign) => {
+const renderChart = (rows) => {
+  const map = new Map();
+  rows.forEach((row) => {
+    const date = parseDate(row.saleDate);
+    if (!date) return;
+    const key = dateToKey(date);
+    if (!map.has(key)) {
+      map.set(key, { date: key, cost: 0, revenue: 0 });
+    }
+    const item = map.get(key);
+    item.cost += row.cost;
+    item.revenue += row.revenue;
+  });
+
+  const points = Array.from(map.values()).sort((a, b) => a.date.localeCompare(b.date));
+  const labels = points.map((p) => p.date.slice(5));
+  const costs = points.map((p) => p.cost);
+  const revenues = points.map((p) => p.revenue);
+  const roas = points.map((p) => (p.cost ? (p.revenue / p.cost) * 100 : 0));
+
+  if (state.chart) {
+    state.chart.destroy();
+  }
+
+  state.chart = new Chart(els.trendChart, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        {
+          type: "bar",
+          label: "광고비",
+          data: costs,
+          backgroundColor: "#ff7a00",
+          borderRadius: 6,
+        },
+        {
+          type: "bar",
+          label: "광고매출",
+          data: revenues,
+          backgroundColor: "#c00084",
+          borderRadius: 6,
+        },
+        {
+          type: "line",
+          label: "광고매출 ROAS",
+          data: roas,
+          borderColor: "#2f6cff",
+          borderWidth: 3,
+          tension: 0.35,
+          yAxisID: "y1",
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: (value) => fmtNumber(value),
+          },
+        },
+        y1: {
+          beginAtZero: true,
+          position: "right",
+          grid: { drawOnChartArea: false },
+          ticks: {
+            callback: (value) => `${value}%`,
+          },
+        },
+      },
+      plugins: {
+        legend: {
+          position: "top",
+        },
+      },
+    },
+  });
+};
+
+const setDefaultRangeFromData = () => {
+  const dates = state.normalized
+    .map((row) => parseDate(row.saleDate))
+    .filter(Boolean)
+    .sort((a, b) => a - b);
+
+  if (!dates.length) {
+    state.dateRange = { start: null, end: null };
+    els.startDate.value = "";
+    els.endDate.value = "";
+    els.startDateCampaign.value = "";
+    els.endDateCampaign.value = "";
+    return;
+  }
+
+  const start = dates[0];
+  const end = dates[dates.length - 1];
+  state.dateRange = {
+    start,
+    end: new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59, 999),
+  };
+  els.startDate.value = dateToKey(start);
+  els.endDate.value = dateToKey(end);
+  els.startDateCampaign.value = dateToKey(start);
+  els.endDateCampaign.value = dateToKey(end);
+};
+
+const renderDashboard = () => {
+  const rows = filterRowsByDate(state.normalized);
+  const totals = buildTotals(rows);
+
+  els.emptyState.classList.toggle("hidden", rows.length > 0);
+  els.dashboardWrap.classList.toggle("hidden", rows.length === 0);
+
+  if (!rows.length) return;
+  renderKpis(totals);
+  renderChart(rows);
+};
+
+const renderCampaignSelect = () => {
+  els.campaignSelect.innerHTML = "";
+  state.campaigns.forEach((campaign) => {
+    const option = document.createElement("option");
+    option.value = campaign.name;
+    option.textContent = campaign.name;
+    if (state.selectedCampaign?.name === campaign.name) {
+      option.selected = true;
+    }
+    els.campaignSelect.appendChild(option);
+  });
+};
+
+const renderBaseStats = (rows) => {
   const areaMap = new Map();
-  campaign.rows.forEach((row) => {
+  rows.forEach((row) => {
     const key = row.area || "기타";
     if (!areaMap.has(key)) {
       areaMap.set(key, {
@@ -422,7 +569,7 @@ const renderBaseStats = (campaign) => {
     item.totals.revenue += row.revenue;
   });
 
-  const rows = Array.from(areaMap.values()).map((item) => {
+  const rowsHtml = Array.from(areaMap.values()).map((item) => {
     const metric = buildMetric({
       impressions: item.totals.impressions,
       clicks: item.totals.clicks,
@@ -430,45 +577,74 @@ const renderBaseStats = (campaign) => {
       cost: item.totals.cost,
       revenue: item.totals.revenue,
     });
-    return [
-      item.area,
-      fmtNumber(item.totals.impressions),
-      fmtNumber(item.totals.clicks),
-      fmtNumber(item.totals.orders),
-      fmtPercent(metric.ctr),
-      fmtPercent(metric.cvr),
-      fmtNumber(metric.cpm, 2),
-      fmtNumber(metric.cpc, 2),
-      fmtNumber(item.totals.cost),
-      fmtNumber(item.totals.revenue),
-      fmtPercent(metric.roas),
-      fmtNumber(metric.cpa, 2),
-      fmtNumber(metric.aov, 2),
-    ];
+    return `
+      <tr>
+        <td>${item.area}</td>
+        <td>${fmtNumber(item.totals.impressions)}</td>
+        <td>${fmtNumber(item.totals.clicks)}</td>
+        <td>${fmtNumber(item.totals.orders)}</td>
+        <td>${fmtPercent(metric.ctr)}</td>
+        <td>${fmtPercent(metric.cvr)}</td>
+        <td>${fmtNumber(metric.cpm, 0)}</td>
+        <td>${fmtNumber(metric.cpc, 0)}</td>
+        <td>${fmtNumber(item.totals.cost)}원</td>
+        <td>${fmtNumber(item.totals.revenue)}원</td>
+        <td>${fmtPercent(metric.roas)}</td>
+        <td>${fmtNumber(metric.cpa, 0)}원</td>
+        <td>${fmtNumber(metric.aov, 0)}원</td>
+      </tr>`;
   });
 
-  els.tabBase.innerHTML = renderTable(
-    [
-      "노출영역",
-      "노출수",
-      "클릭",
-      "주문",
-      "클릭률",
-      "전환율",
-      "CPM",
-      "CPC",
-      "광고비(VAT포함)",
-      "광고매출",
-      "ROAS",
-      "전환당비용",
-      "객단가",
-    ],
-    rows
-  );
+  const totals = buildTotals(rows);
+  const totalMetric = buildMetric(totals);
+
+  const totalRow = `
+    <tr>
+      <td><strong>합계</strong></td>
+      <td><strong>${fmtNumber(totals.impressions)}</strong></td>
+      <td><strong>${fmtNumber(totals.clicks)}</strong></td>
+      <td><strong>${fmtNumber(totals.orders)}</strong></td>
+      <td><strong>${fmtPercent(totalMetric.ctr)}</strong></td>
+      <td><strong>${fmtPercent(totalMetric.cvr)}</strong></td>
+      <td><strong>${fmtNumber(totalMetric.cpm, 0)}</strong></td>
+      <td><strong>${fmtNumber(totalMetric.cpc, 0)}</strong></td>
+      <td><strong>${fmtNumber(totals.cost)}원</strong></td>
+      <td><strong>${fmtNumber(totals.revenue)}원</strong></td>
+      <td><strong>${fmtPercent(totalMetric.roas)}</strong></td>
+      <td><strong>${fmtNumber(totalMetric.cpa, 0)}원</strong></td>
+      <td><strong>${fmtNumber(totalMetric.aov, 0)}원</strong></td>
+    </tr>`;
+
+  return `
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>노출 영역</th>
+            <th>노출수</th>
+            <th>클릭</th>
+            <th>주문</th>
+            <th>클릭률</th>
+            <th>전환율</th>
+            <th>CPM</th>
+            <th>CPC</th>
+            <th>광고비</th>
+            <th>광고매출</th>
+            <th>ROAS</th>
+            <th>전환당비용</th>
+            <th>객단가</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml.join("")}
+          ${totalRow}
+        </tbody>
+      </table>
+    </div>`;
 };
 
-const renderSoldOptions = (campaign) => {
-  const filtered = campaign.rows.filter((row) => row.sales > 0);
+const renderSoldOptions = (rows) => {
+  const filtered = rows.filter((row) => row.sales > 0 || row.revenue > 0);
   const map = new Map();
 
   filtered.forEach((row) => {
@@ -484,22 +660,43 @@ const renderSoldOptions = (campaign) => {
     map.get(key).revenue += row.revenue;
   });
 
-  const rows = Array.from(map.values()).map((item) => [
-    item.saleDate,
-    item.optionName,
-    item.keyword,
-    fmtNumber(item.revenue),
-  ]);
+  const rowsHtml = Array.from(map.values()).map((item) => `
+      <tr>
+        <td>${item.saleDate}</td>
+        <td>${item.optionName}</td>
+        <td>${item.keyword}</td>
+        <td class="text-right">${fmtNumber(item.revenue)}원</td>
+      </tr>`);
 
-  els.tabSold.innerHTML = renderTable(
-    ["판매일", "상품명", "판매된 키워드", "광고매출"],
-    rows
-  );
+  const totals = buildTotals(filtered);
+  const metrics = buildMetric(totals);
+
+  return `
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>판매일</th>
+            <th>옵션명</th>
+            <th>키워드</th>
+            <th>광고매출</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="4">
+              광고비 ${fmtNumber(totals.cost)}원 · 광고매출 ROAS ${fmtPercent(metrics.roas)}
+            </td>
+          </tr>
+          ${rowsHtml.join("") || `<tr><td colspan="4">데이터 없음</td></tr>`}
+        </tbody>
+      </table>
+    </div>`;
 };
 
-const renderOptions = (campaign) => {
+const renderOptions = (rows) => {
   const map = new Map();
-  campaign.rows.forEach((row) => {
+  rows.forEach((row) => {
     const key = `${row.optionId}||${row.optionName}`;
     if (!map.has(key)) {
       map.set(key, {
@@ -524,7 +721,7 @@ const renderOptions = (campaign) => {
     item.totals.orders += row.orders;
   });
 
-  const rows = Array.from(map.values()).map((item) => {
+  const rowsHtml = Array.from(map.values()).map((item) => {
     const metric = buildMetric({
       impressions: item.totals.impressions,
       clicks: item.totals.clicks,
@@ -533,41 +730,50 @@ const renderOptions = (campaign) => {
       revenue: item.totals.revenue,
     });
 
-    return [
-      item.optionId,
-      item.optionName,
-      fmtNumber(item.totals.sales),
-      fmtNumber(item.totals.cost),
-      fmtNumber(item.totals.revenue),
-      fmtPercent(metric.roas),
-      fmtNumber(item.totals.impressions),
-      fmtNumber(item.totals.clicks),
-      fmtPercent(metric.ctr),
-      fmtPercent(metric.cvr),
-    ];
+    return `
+      <tr>
+        <td>${item.optionId}</td>
+        <td>${item.optionName}</td>
+        <td>${fmtNumber(item.totals.orders)}</td>
+        <td>${fmtNumber(item.totals.cost)}원</td>
+        <td>${fmtNumber(item.totals.revenue)}원</td>
+        <td>${fmtPercent(metric.roas)}</td>
+        <td>${fmtNumber(item.totals.impressions)}</td>
+        <td>${fmtNumber(item.totals.clicks)}</td>
+        <td>${fmtPercent(metric.ctr)}</td>
+        <td>${fmtPercent(metric.cvr)}</td>
+      </tr>`;
   });
 
-  els.tabOptions.innerHTML = renderTable(
-    [
-      "옵션ID",
-      "상품명",
-      "판매량",
-      "광고비(VAT포함)",
-      "광고매출",
-      "ROAS",
-      "노출",
-      "클릭",
-      "클릭률",
-      "전환율",
-    ],
-    rows
-  );
+  return `
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>옵션ID</th>
+            <th>옵션명</th>
+            <th>주문</th>
+            <th>광고비</th>
+            <th>광고매출</th>
+            <th>ROAS</th>
+            <th>노출</th>
+            <th>클릭</th>
+            <th>클릭률</th>
+            <th>전환율</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml.join("") || `<tr><td colspan="10">데이터 없음</td></tr>`}
+        </tbody>
+      </table>
+    </div>`;
 };
 
-const renderKeywords = (campaign) => {
+const renderKeywords = (rows) => {
   const map = new Map();
-  campaign.rows.forEach((row) => {
+  rows.forEach((row) => {
     if (!row.keyword) return;
+    if (state.keywordFilter && !row.keyword.includes(state.keywordFilter)) return;
     const key = row.keyword;
     if (!map.has(key)) {
       map.set(key, {
@@ -583,9 +789,8 @@ const renderKeywords = (campaign) => {
     item.totals.revenue += row.revenue;
   });
 
-  const excluded = new Set(loadExcluded(campaign.name));
-
-  const rows = Array.from(map.values()).map((item) => {
+  const excluded = new Set(loadExcluded(state.selectedCampaign?.name || ""));
+  const rowsHtml = Array.from(map.values()).map((item) => {
     const metric = buildMetric({
       impressions: item.totals.impressions,
       clicks: item.totals.clicks,
@@ -594,46 +799,35 @@ const renderKeywords = (campaign) => {
       revenue: item.totals.revenue,
     });
 
-    return {
-      keyword: item.keyword,
-      cells: [
-        item.keyword,
-        fmtNumber(item.totals.impressions),
-        fmtNumber(item.totals.clicks),
-        fmtPercent(metric.ctr),
-        fmtNumber(item.totals.orders),
-        fmtPercent(metric.cvr),
-        fmtNumber(metric.cpc, 2),
-        fmtNumber(item.totals.cost),
-        fmtNumber(item.totals.revenue),
-        fmtPercent(metric.roas),
-      ],
-      excluded: excluded.has(item.keyword),
-    };
+    return `
+      <tr data-keyword="${item.keyword}">
+        <td>${item.keyword}</td>
+        <td>${fmtNumber(item.totals.impressions)}</td>
+        <td>${fmtNumber(item.totals.clicks)}</td>
+        <td>${fmtPercent(metric.ctr)}</td>
+        <td>${fmtNumber(item.totals.orders)}</td>
+        <td>${fmtPercent(metric.cvr)}</td>
+        <td>${fmtNumber(metric.cpc, 0)}</td>
+        <td>${fmtNumber(item.totals.cost)}원</td>
+        <td>${fmtNumber(item.totals.revenue)}원</td>
+        <td>${fmtPercent(metric.roas)}</td>
+        <td><input type="checkbox" ${excluded.has(item.keyword) ? "checked" : ""} /></td>
+      </tr>`;
   });
 
-  rows.sort((a, b) => a.keyword.localeCompare(b.keyword));
-
-  const tableRows = rows
-    .map(
-      (row) => `
-      <tr data-keyword="${row.keyword}">
-        <td><input type="checkbox" ${row.excluded ? "checked" : ""} /></td>
-        ${row.cells.map((cell) => `<td>${cell}</td>`).join("")}
-      </tr>`
-    )
-    .join("");
-
-  els.tabKeywords.innerHTML = `
-    <div class="table-actions">
-      <button id="saveExcluded" class="ghost">선택 키워드 제외 저장</button>
-      <span class="small">체크된 키워드가 제외 키워드로 저장됩니다.</span>
+  return `
+    <div class="keyword-actions">
+      <input id="keywordSearch" type="search" placeholder="키워드명으로 검색하세요." value="${state.keywordFilter}" />
+      <button id="keywordSearchBtn" class="primary">검색</button>
+      <div class="action-group">
+        <button id="excludeBtn" class="action-btn">제외키워드 등록하기</button>
+        <button class="action-btn secondary">수동 입찰가 관리 등록하기</button>
+      </div>
     </div>
     <div class="table-wrap">
       <table class="table">
         <thead>
           <tr>
-            <th>제외</th>
             <th>키워드</th>
             <th>노출</th>
             <th>클릭</th>
@@ -644,39 +838,21 @@ const renderKeywords = (campaign) => {
             <th>광고비</th>
             <th>광고매출</th>
             <th>ROAS</th>
+            <th>제외</th>
           </tr>
         </thead>
         <tbody>
-          ${tableRows || `<tr><td colspan="11">데이터 없음</td></tr>`}
+          ${rowsHtml.join("") || `<tr><td colspan="11">데이터 없음</td></tr>`}
         </tbody>
       </table>
-    </div>
-  `;
-
-  const saveBtn = document.getElementById("saveExcluded");
-  saveBtn.addEventListener("click", () => {
-    const checked = Array.from(els.tabKeywords.querySelectorAll("tbody tr"))
-      .filter((row) => row.querySelector("input")?.checked)
-      .map((row) => row.dataset.keyword)
-      .filter(Boolean);
-
-    saveExcluded(campaign.name, checked);
-    renderExcluded(campaign);
-  });
+    </div>`;
 };
 
-const renderExcluded = (campaign) => {
-  const excluded = loadExcluded(campaign.name);
+const renderExcluded = () => {
+  const excluded = loadExcluded(state.selectedCampaign?.name || "");
+  els.excludedCount.textContent = excluded.length;
 
-  const rows = excluded.map(
-    (keyword) => `
-      <tr data-keyword="${keyword}">
-        <td>${keyword}</td>
-        <td><button class="ghost remove-excluded">삭제</button></td>
-      </tr>`
-  );
-
-  els.tabExcluded.innerHTML = `
+  return `
     <div class="table-wrap">
       <table class="table">
         <thead>
@@ -686,56 +862,137 @@ const renderExcluded = (campaign) => {
           </tr>
         </thead>
         <tbody>
-          ${rows.join("") || `<tr><td colspan="2">제외 키워드 없음</td></tr>`}
+          ${excluded
+            .map(
+              (keyword) => `
+                <tr data-keyword="${keyword}">
+                  <td>${keyword}</td>
+                  <td><button class="ghost remove-excluded">삭제</button></td>
+                </tr>`
+            )
+            .join("") || `<tr><td colspan="2">제외 키워드 없음</td></tr>`}
         </tbody>
       </table>
-    </div>
-  `;
+    </div>`;
+};
 
-  els.tabExcluded.querySelectorAll(".remove-excluded").forEach((btn) => {
-    btn.addEventListener("click", (event) => {
-      const keyword = event.target.closest("tr")?.dataset.keyword;
-      if (!keyword) return;
-      const next = excluded.filter((item) => item !== keyword);
-      saveExcluded(campaign.name, next);
-      renderExcluded(campaign);
-      renderKeywords(campaign);
+const renderManual = () => `
+  <div class="empty">
+    <h3>수동 입찰가 관리</h3>
+    <p class="muted">등록된 항목이 없습니다.</p>
+  </div>`;
+
+const renderCampaignTabs = (tab) => {
+  const tabs = {
+    base: els.tabBase,
+    sold: els.tabSold,
+    options: els.tabOptions,
+    keywords: els.tabKeywords,
+    excluded: els.tabExcluded,
+    manual: els.tabManual,
+  };
+
+  Object.entries(tabs).forEach(([key, panel]) => {
+    panel.classList.toggle("hidden", key !== tab);
+  });
+
+  els.campaignTabs.querySelectorAll("button").forEach((button) => {
+    button.classList.toggle("active", button.dataset.tab === tab);
+  });
+
+  const descMap = {
+    base: "ROAS가 높은 노출영역으로 예산이 잘 쓰이고 있는지 확인하세요.",
+    sold: "해당 광고캠페인에서 어떤 옵션이 팔렸는지 한눈에 확인할 수 있습니다.",
+    options: "판매가 잘 일어나지 않는 옵션은 광고 캠페인에서 OFF 해주세요.",
+    keywords: "성과가 없는 키워드는 제외키워드로 등록하세요.",
+    excluded: "제외 키워드를 관리할 수 있습니다.",
+    manual: "수동 입찰가 관리 항목을 관리합니다.",
+  };
+
+  const titleMap = {
+    base: "기본통계",
+    sold: "팔린 옵션",
+    options: "전체 옵션",
+    keywords: "전체 키워드",
+    excluded: "제외 키워드",
+    manual: "수동 입찰가 관리",
+  };
+
+  els.campaignSectionTitle.textContent = titleMap[tab];
+  els.campaignSectionDesc.textContent = descMap[tab];
+};
+
+const renderCampaignView = (tab = "base") => {
+  if (!state.selectedCampaign) return;
+  const rows = filterRowsByDate(state.selectedCampaign.rows);
+
+  renderCampaignTabs(tab);
+
+  if (tab === "base") {
+    els.tabBase.innerHTML = renderBaseStats(rows);
+  } else if (tab === "sold") {
+    els.tabSold.innerHTML = renderSoldOptions(rows);
+  } else if (tab === "options") {
+    els.tabOptions.innerHTML = renderOptions(rows);
+  } else if (tab === "keywords") {
+    els.tabKeywords.innerHTML = renderKeywords(rows);
+
+    const searchInput = document.getElementById("keywordSearch");
+    const searchBtn = document.getElementById("keywordSearchBtn");
+    const excludeBtn = document.getElementById("excludeBtn");
+
+    if (searchBtn) {
+      searchBtn.addEventListener("click", () => {
+        state.keywordFilter = searchInput.value.trim();
+        renderCampaignView("keywords");
+      });
+    }
+
+    if (excludeBtn) {
+      excludeBtn.addEventListener("click", () => {
+        const checked = Array.from(els.tabKeywords.querySelectorAll("tbody input[type='checkbox']"))
+          .filter((input) => input.checked)
+          .map((input) => input.closest("tr")?.dataset.keyword)
+          .filter(Boolean);
+        const current = loadExcluded(state.selectedCampaign.name);
+        const next = Array.from(new Set([...current, ...checked]));
+        saveExcluded(state.selectedCampaign.name, next);
+        renderCampaignView("excluded");
+      });
+    }
+  } else if (tab === "excluded") {
+    els.tabExcluded.innerHTML = renderExcluded();
+    els.tabExcluded.querySelectorAll(".remove-excluded").forEach((btn) => {
+      btn.addEventListener("click", (event) => {
+        const keyword = event.target.closest("tr")?.dataset.keyword;
+        if (!keyword) return;
+        const current = loadExcluded(state.selectedCampaign.name);
+        const next = current.filter((item) => item !== keyword);
+        saveExcluded(state.selectedCampaign.name, next);
+        renderCampaignView("excluded");
+      });
     });
+  } else if (tab === "manual") {
+    els.tabManual.innerHTML = renderManual();
+  }
+
+  els.excludedCount.textContent = loadExcluded(state.selectedCampaign.name).length;
+};
+
+const showView = (view) => {
+  state.view = view;
+  els.dashboardView.classList.toggle("hidden", view !== "dashboard");
+  els.campaignView.classList.toggle("hidden", view !== "campaign");
+  document.querySelectorAll(".nav-item").forEach((item) => {
+    item.classList.toggle("active", item.dataset.view === view);
   });
 };
 
-const renderTable = (headers, rows) => {
-  const bodyRows = rows.length
-    ? rows.map((cells) => `<tr>${cells.map((cell) => `<td>${cell}</td>`).join("")}</tr>`).join("")
-    : `<tr><td colspan="${headers.length}">데이터 없음</td></tr>`;
-
-  return `
-    <div class="table-wrap">
-      <table class="table">
-        <thead>
-          <tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr>
-        </thead>
-        <tbody>${bodyRows}</tbody>
-      </table>
-    </div>
-  `;
-};
-
 const selectCampaign = (name) => {
-  const campaign = state.campaigns.find((item) => item.name === name);
-  if (!campaign) return;
-  state.selectedCampaign = campaign;
-
-  els.emptyState.classList.add("hidden");
-  els.detailWrap.classList.remove("hidden");
-
-  renderCampaignList();
-  renderSummary(campaign);
-  renderBaseStats(campaign);
-  renderSoldOptions(campaign);
-  renderOptions(campaign);
-  renderKeywords(campaign);
-  renderExcluded(campaign);
+  state.selectedCampaign = state.campaigns.find((c) => c.name === name) || null;
+  if (!state.selectedCampaign) return;
+  renderCampaignSelect();
+  renderCampaignView("base");
 };
 
 const handleApplyMapping = () => {
@@ -761,33 +1018,11 @@ const handleApplyMapping = () => {
 
   state.normalized = normalizeRows();
   buildCampaigns();
-
+  setDefaultRangeFromData();
+  renderDashboard();
   if (state.campaigns.length) {
     selectCampaign(state.campaigns[0].name);
   }
-};
-
-const handleTabSwitch = (event) => {
-  const btn = event.target.closest("button");
-  if (!btn) return;
-  const tab = btn.dataset.tab;
-  if (!tab) return;
-
-  els.tabs.querySelectorAll("button").forEach((button) => {
-    button.classList.toggle("active", button === btn);
-  });
-
-  const panels = {
-    base: els.tabBase,
-    sold: els.tabSold,
-    options: els.tabOptions,
-    keywords: els.tabKeywords,
-    excluded: els.tabExcluded,
-  };
-
-  Object.entries(panels).forEach(([key, panel]) => {
-    panel.classList.toggle("hidden", key !== tab);
-  });
 };
 
 const handleWindowChange = () => {
@@ -795,9 +1030,83 @@ const handleWindowChange = () => {
   if (!state.rawRows.length) return;
   state.normalized = normalizeRows();
   buildCampaigns();
+  setDefaultRangeFromData();
+  renderDashboard();
   if (state.selectedCampaign) {
     selectCampaign(state.selectedCampaign.name);
   }
+};
+
+const applyDate = (startInput, endInput) => {
+  const start = startInput.value ? new Date(startInput.value) : null;
+  const end = endInput.value ? new Date(endInput.value) : null;
+  if (!start || !end) return;
+  setRange(start, end);
+};
+
+const setRange = (start, end) => {
+  const startKey = dateToKey(start);
+  const endKey = dateToKey(end);
+  els.startDate.value = startKey;
+  els.endDate.value = endKey;
+  els.startDateCampaign.value = startKey;
+  els.endDateCampaign.value = endKey;
+  end.setHours(23, 59, 59, 999);
+  state.dateRange = { start, end };
+  renderDashboard();
+  renderCampaignView("base");
+};
+
+const handleQuickRange = (event, group) => {
+  const btn = event.target.closest("button");
+  if (!btn) return;
+  const range = btn.dataset.range;
+  if (!range) return;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  let start = new Date(today);
+  let end = new Date(today);
+
+  if (range === "prev") {
+    if (state.dateRange.start && state.dateRange.end) {
+      const diff = state.dateRange.end.getTime() - state.dateRange.start.getTime();
+      end = new Date(state.dateRange.start.getTime() - 86400000);
+      start = new Date(end.getTime() - diff);
+    }
+  } else if (range === "next") {
+    if (state.dateRange.start && state.dateRange.end) {
+      const diff = state.dateRange.end.getTime() - state.dateRange.start.getTime();
+      start = new Date(state.dateRange.end.getTime() + 86400000);
+      end = new Date(start.getTime() + diff);
+    }
+  } else if (range === "yesterday") {
+    start.setDate(start.getDate() - 1);
+    end = new Date(start);
+  } else if (range === "3d") {
+    start.setDate(start.getDate() - 2);
+  } else if (range === "1w") {
+    start.setDate(start.getDate() - 6);
+  } else if (range === "2w") {
+    start.setDate(start.getDate() - 13);
+  } else if (range === "1m") {
+    start.setMonth(start.getMonth() - 1);
+    start.setDate(start.getDate() + 1);
+  } else if (range === "2m") {
+    start.setMonth(start.getMonth() - 2);
+    start.setDate(start.getDate() + 1);
+  } else if (range === "this") {
+    start = new Date(today.getFullYear(), today.getMonth(), 1);
+  } else if (range === "last") {
+    start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    end = new Date(today.getFullYear(), today.getMonth(), 0);
+  }
+
+  setRange(start, end);
+
+  group.querySelectorAll("button").forEach((button) => {
+    button.classList.toggle("active", button === btn);
+  });
 };
 
 const handleSave = () => {
@@ -806,24 +1115,20 @@ const handleSave = () => {
     return;
   }
 
-  const excludedByCampaign = {};
-  state.campaigns.forEach((campaign) => {
-    excludedByCampaign[campaign.name] = loadExcluded(campaign.name);
-  });
-
   const payload = {
     version: 1,
     createdAt: new Date().toISOString(),
     mapping: state.mapping,
     rows: state.normalized,
-    excludedByCampaign,
+    dateRange: state.dateRange,
+    window: state.window,
   };
 
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `coupang-report-${Date.now()}.json`;
+  a.download = `coupang-dashboard-${Date.now()}.json`;
   a.click();
   URL.revokeObjectURL(url);
 };
@@ -840,13 +1145,23 @@ const handleLoad = async (file) => {
 
   state.mapping = payload.mapping || {};
   state.normalized = payload.rows;
-  if (payload.excludedByCampaign && typeof payload.excludedByCampaign === "object") {
-    Object.entries(payload.excludedByCampaign).forEach(([name, list]) => {
-      if (Array.isArray(list)) saveExcluded(name, list);
-    });
-  }
-  buildCampaigns();
+  state.window = payload.window || "1d";
+  els.windowSelect.value = state.window;
 
+  if (payload.dateRange?.start && payload.dateRange?.end) {
+    const start = new Date(payload.dateRange.start);
+    const end = new Date(payload.dateRange.end);
+    state.dateRange = { start, end };
+    els.startDate.value = dateToKey(start);
+    els.endDate.value = dateToKey(end);
+    els.startDateCampaign.value = dateToKey(start);
+    els.endDateCampaign.value = dateToKey(end);
+  } else {
+    setDefaultRangeFromData();
+  }
+
+  buildCampaigns();
+  renderDashboard();
   if (state.campaigns.length) {
     selectCampaign(state.campaigns[0].name);
   }
@@ -858,8 +1173,36 @@ els.fileInput.addEventListener("change", (event) => {
 });
 
 els.applyMapping.addEventListener("click", handleApplyMapping);
-els.campaignSearch.addEventListener("input", renderCampaignList);
-els.tabs.addEventListener("click", handleTabSwitch);
 els.saveBtn.addEventListener("click", handleSave);
 els.loadJsonInput.addEventListener("change", (event) => handleLoad(event.target.files[0]));
 els.windowSelect.addEventListener("change", handleWindowChange);
+
+els.applyDate.addEventListener("click", () => applyDate(els.startDate, els.endDate));
+els.applyDateCampaign.addEventListener("click", () =>
+  applyDate(els.startDateCampaign, els.endDateCampaign)
+);
+
+els.campaignQuickGroup.addEventListener("click", (event) =>
+  handleQuickRange(event, els.campaignQuickGroup)
+);
+
+document.querySelector(".quick-group").addEventListener("click", (event) =>
+  handleQuickRange(event, document.querySelector(".quick-group"))
+);
+
+els.campaignSelect.addEventListener("change", (event) => {
+  selectCampaign(event.target.value);
+});
+
+els.campaignTabs.addEventListener("click", (event) => {
+  const btn = event.target.closest("button");
+  if (!btn) return;
+  renderCampaignView(btn.dataset.tab || "base");
+});
+
+document.querySelectorAll(".nav-item").forEach((item) => {
+  item.addEventListener("click", () => {
+    if (!item.dataset.view) return;
+    showView(item.dataset.view);
+  });
+});
