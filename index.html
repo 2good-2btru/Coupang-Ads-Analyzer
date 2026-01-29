@@ -1,14 +1,91 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hello World</title>
-  <link href='/style.css' rel='stylesheet'>
+  <title>쿠팡 광고 리포트 분석기</title>
+  <link href="/style.css" rel="stylesheet" />
 </head>
 <body>
-  <h1>Hello, world!</h1>
-  <button onclick="console.log('hello');">Press me</button>
-  <script defer type="text/javascript" src="/main.js"></script>
+  <div class="bg-grid"></div>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">AD</div>
+      <div>
+        <h1>쿠팡 광고 리포트 분석기</h1>
+        <p>엑셀 업로드 → 분석 → 저장 (브라우저 전용)</p>
+      </div>
+    </div>
+    <div class="actions">
+      <label class="file-btn">
+        엑셀 업로드
+        <input id="fileInput" type="file" accept=".xlsx,.xls" />
+      </label>
+      <select id="windowSelect" aria-label="전환 기준">
+        <option value="1d">1일 기준</option>
+        <option value="14d">14일 기준</option>
+      </select>
+      <button id="saveBtn" class="ghost">분석 저장</button>
+      <label class="ghost file-btn">
+        저장 불러오기
+        <input id="loadJsonInput" type="file" accept=".json" />
+      </label>
+    </div>
+  </header>
+
+  <section id="mappingPanel" class="panel hidden">
+    <div class="panel-head">
+      <h2>컬럼 매핑</h2>
+      <button id="applyMapping" class="primary">적용</button>
+    </div>
+    <div id="mappingGrid" class="mapping-grid"></div>
+    <p class="hint">필수 항목: 캠페인, 노출수, 클릭, 주문, 광고비, 광고매출</p>
+  </section>
+
+  <main class="layout">
+    <aside class="panel list-panel">
+      <div class="panel-head">
+        <h2>캠페인</h2>
+        <input id="campaignSearch" type="search" placeholder="캠페인 검색" />
+      </div>
+      <div id="campaignList" class="list"></div>
+    </aside>
+
+    <section class="panel detail-panel">
+      <div id="emptyState" class="empty">
+        <h2>리포트를 업로드하세요</h2>
+        <p>쿠팡 광고보고서 엑셀 파일을 업로드하면 분석이 시작됩니다.</p>
+      </div>
+
+      <div id="detailWrap" class="hidden">
+        <div class="summary">
+          <div>
+            <h2 id="campaignTitle">캠페인</h2>
+            <p id="campaignMeta" class="muted"></p>
+          </div>
+          <div class="summary-cards" id="summaryCards"></div>
+        </div>
+
+        <div class="tabs" id="tabs">
+          <button data-tab="base" class="active">기본 통계</button>
+          <button data-tab="sold">팔린 옵션</button>
+          <button data-tab="options">전체 옵션</button>
+          <button data-tab="keywords">전체 키워드</button>
+          <button data-tab="excluded">제외 키워드</button>
+        </div>
+
+        <div class="tab-content">
+          <div id="tab-base" class="tab-panel"></div>
+          <div id="tab-sold" class="tab-panel hidden"></div>
+          <div id="tab-options" class="tab-panel hidden"></div>
+          <div id="tab-keywords" class="tab-panel hidden"></div>
+          <div id="tab-excluded" class="tab-panel hidden"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script defer src="/main.js"></script>
 </body>
 </html>
