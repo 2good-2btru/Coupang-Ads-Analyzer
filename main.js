@@ -239,8 +239,20 @@ const saveExcluded = (campaignName, list) => {
 const parseDate = (value) => {
   if (!value) return null;
   if (value instanceof Date) return value;
+  if (typeof value === "number") {
+    // Excel serial date support
+    const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+    const date = new Date(excelEpoch.getTime() + value * 86400000);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
   const text = String(value).trim();
   if (!text) return null;
+  if (/^\\d{8}$/.test(text)) {
+    const y = parseInt(text.slice(0, 4), 10);
+    const m = parseInt(text.slice(4, 6), 10);
+    const d = parseInt(text.slice(6, 8), 10);
+    return new Date(y, m - 1, d);
+  }
   const normalized = text.replace(/[./]/g, "-");
   const parts = normalized.split("-").map((v) => parseInt(v, 10));
   if (parts.length >= 3 && parts.every((v) => Number.isFinite(v))) {
