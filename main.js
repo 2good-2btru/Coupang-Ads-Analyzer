@@ -156,6 +156,7 @@ const els = {
   dashboardView: document.getElementById("dashboardView"),
   campaignView: document.getElementById("campaignView"),
   campaignSelect: document.getElementById("campaignSelect"),
+  campaignTable: document.getElementById("campaignTable"),
   campaignTabs: document.getElementById("campaignTabs"),
   campaignSectionTitle: document.getElementById("campaignSectionTitle"),
   campaignSectionDesc: document.getElementById("campaignSectionDesc"),
@@ -514,6 +515,44 @@ const renderCampaignSelect = () => {
       option.selected = true;
     }
     els.campaignSelect.appendChild(option);
+  });
+};
+
+const getDateRangeLabel = () => {
+  if (!state.dateRange.start || !state.dateRange.end) return "-";
+  return `${dateToKey(state.dateRange.start)} ~ ${dateToKey(state.dateRange.end)}`;
+};
+
+const renderCampaignTable = () => {
+  if (!els.campaignTable) return;
+  const tbody = els.campaignTable.querySelector("tbody");
+  tbody.innerHTML = "";
+
+  state.campaigns.forEach((campaign) => {
+    const rows = filterRowsByDate(campaign.rows);
+    const totals = buildTotals(rows);
+    const metrics = buildMetric(totals);
+
+    const tr = document.createElement("tr");
+    if (state.selectedCampaign?.name === campaign.name) {
+      tr.classList.add("active-row");
+    }
+    tr.innerHTML = `
+      <td>${getDateRangeLabel()}</td>
+      <td>${campaign.name}</td>
+      <td>${fmtPercent(metrics.roas)}</td>
+      <td>${fmtNumber(metrics.cpc, 0)}원</td>
+      <td>${fmtPercent(metrics.ctr)}</td>
+      <td>${fmtPercent(metrics.cvr)}</td>
+      <td>${fmtNumber(totals.sales)}</td>
+      <td>${fmtNumber(totals.cost)}원</td>
+      <td>${fmtNumber(totals.revenue)}원</td>
+      <td>${fmtNumber(metrics.cpa, 0)}원</td>
+    `;
+    tr.addEventListener("click", () => {
+      selectCampaign(campaign.name);
+    });
+    tbody.appendChild(tr);
   });
 };
 
@@ -943,6 +982,7 @@ const renderCampaignView = (tab = "base") => {
   }
 
   els.excludedCount.textContent = loadExcluded(state.selectedCampaign.name).length;
+  renderCampaignTable();
 };
 
 const showView = (view) => {
@@ -970,6 +1010,7 @@ const processData = () => {
   if (state.campaigns.length) {
     selectCampaign(state.campaigns[0].name);
   }
+  renderCampaignTable();
 };
 
 const handleWindowChange = () => {
@@ -996,6 +1037,7 @@ const setRange = (start, end) => {
   state.dateRange = { start, end };
   renderDashboard();
   renderCampaignView("base");
+  renderCampaignTable();
 };
 
 const handleQuickRange = (event, group) => {
@@ -1106,6 +1148,7 @@ const handleLoad = async (file) => {
   if (state.campaigns.length) {
     selectCampaign(state.campaigns[0].name);
   }
+  renderCampaignTable();
 };
 
 els.fileInput.addEventListener("change", (event) => {
