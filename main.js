@@ -320,7 +320,7 @@ const normalizeRows = () => {
     orders: toNumber(row[ordersCol]),
     cost: toNumber(row[mapped.cost]),
     revenue: toNumber(row[revenueCol]),
-    sales: toNumber(row[salesCol]),
+    sales: toNumber(row[salesCol]) || toNumber(row[ordersCol]),
     area: normalizeArea(row[mapped.area]),
     keyword: String(row[mapped.keyword] || "").trim(),
     optionId: String(row[mapped.optionId] || "").trim(),
@@ -551,6 +551,7 @@ const renderCampaignTable = () => {
     `;
     tr.addEventListener("click", () => {
       selectCampaign(campaign.name);
+      showView("campaign");
     });
     tbody.appendChild(tr);
   });
@@ -999,6 +1000,7 @@ const selectCampaign = (name) => {
   if (!state.selectedCampaign) return;
   renderCampaignSelect();
   renderCampaignView("base");
+  showView("campaign");
 };
 
 const processData = () => {
