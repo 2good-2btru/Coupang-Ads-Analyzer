@@ -247,6 +247,12 @@ const parseDate = (value) => {
   }
   const text = String(value).trim();
   if (!text) return null;
+  if (/^\\d+$/.test(text) && parseInt(text, 10) > 30000) {
+    const serial = parseInt(text, 10);
+    const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+    const date = new Date(excelEpoch.getTime() + serial * 86400000);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
   if (/^\\d{8}$/.test(text)) {
     const y = parseInt(text.slice(0, 4), 10);
     const m = parseInt(text.slice(4, 6), 10);
@@ -324,6 +330,21 @@ const normalizeRows = () => {
     mapped[use14d ? "revenue14" : "revenue1"] || mapped.revenue || "";
   const salesCol =
     mapped[use14d ? "sales14" : "sales1"] || mapped.sales || "";
+  const inferDateValue = (row) => {
+    for (const key of state.columns) {
+      const value = row[key];
+      if (value instanceof Date) return value;
+      if (typeof value === "number" && value > 30000) return value;
+      if (typeof value === "string") {
+        const text = value.trim();
+        if (!text) continue;
+        if (/^\\d{8}$/.test(text)) return text;
+        if (/^\\d{4}[-/.]\\d{1,2}[-/.]\\d{1,2}/.test(text)) return text;
+        if (/^\\d+$/.test(text) && parseInt(text, 10) > 30000) return text;
+      }
+    }
+    return "";
+  };
 
   return state.rawRows.map((row) => ({
     campaign: String(row[mapped.campaign] || "미분류").trim(),
@@ -337,7 +358,7 @@ const normalizeRows = () => {
     keyword: String(row[mapped.keyword] || "").trim(),
     optionId: String(row[mapped.optionId] || "").trim(),
     optionName: String(row[mapped.optionName] || "").trim(),
-    saleDate: String(row[mapped.saleDate] || "").trim(),
+    saleDate: String(row[mapped.saleDate] || inferDateValue(row) || "").trim(),
   }));
 };
 

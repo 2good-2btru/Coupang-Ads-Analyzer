@@ -1,13 +1,13 @@
 :root {
-  --bg: #f5f6fb;
-  --panel: #ffffff;
-  --ink: #1d1d1f;
-  --muted: #7a7a8a;
-  --accent: #c00084;
-  --accent-dark: #9d006d;
-  --line: #e5e7f1;
-  --soft: #f2f3f8;
-  --shadow: 0 10px 25px rgba(31, 37, 89, 0.08);
+  --bg: #0b0f1a;
+  --panel: #111827;
+  --ink: #e5e7eb;
+  --muted: #9ca3af;
+  --accent: #2f6cff;
+  --accent-dark: #1f4fce;
+  --line: #1f2937;
+  --soft: #0f172a;
+  --shadow: 0 10px 25px rgba(15, 23, 42, 0.45);
 }
 
 * {
@@ -25,8 +25,8 @@ body {
 .bg-soft {
   position: fixed;
   inset: 0;
-  background: radial-gradient(circle at top left, rgba(192, 0, 132, 0.08), transparent 45%),
-    radial-gradient(circle at top right, rgba(88, 91, 255, 0.08), transparent 45%);
+  background: radial-gradient(circle at top left, rgba(47, 108, 255, 0.15), transparent 45%),
+    radial-gradient(circle at top right, rgba(31, 79, 206, 0.12), transparent 45%);
   pointer-events: none;
   z-index: 0;
 }
@@ -39,7 +39,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 16px 32px;
-  background: #ffffff;
+  background: #0b1220;
   border-bottom: 1px solid var(--line);
   gap: 16px;
 }
@@ -106,8 +106,8 @@ button,
 
 button.ghost,
 .file-btn.ghost {
-  background: white;
-  color: var(--accent-dark);
+  background: #0f172a;
+  color: var(--ink);
   border-color: var(--line);
 }
 
@@ -122,7 +122,7 @@ button.ghost,
   display: grid;
   place-items: center;
   border: 1px solid var(--line);
-  background: white;
+  background: #0f172a;
 }
 
 .dashboard,
@@ -162,7 +162,8 @@ input[type="date"] {
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 8px 10px;
-  background: #fff;
+  background: #0f172a;
+  color: var(--ink);
 }
 
 .filter-panel {
@@ -194,7 +195,7 @@ input[type="date"] {
 }
 
 .quick-group button {
-  background: white;
+  background: #0f172a;
   color: var(--ink);
   border-color: var(--line);
 }
@@ -215,7 +216,7 @@ input[type="date"] {
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 16px;
-  background: white;
+  background: #0f172a;
   box-shadow: var(--shadow);
 }
 
@@ -249,7 +250,7 @@ input[type="date"] {
 }
 
 .mapping-item {
-  background: #fff;
+  background: #0f172a;
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 12px;
@@ -293,6 +294,7 @@ input[type="date"] {
   font-weight: 700;
   border: none;
   background: transparent;
+  color: var(--ink);
 }
 
 .campaign-actions {
@@ -313,10 +315,11 @@ input[type="date"] {
   background: var(--soft);
   padding: 12px 10px;
   font-weight: 600;
+  color: var(--ink);
 }
 
 .campaign-tabs button.active {
-  background: #4c5563;
+  background: #1f2937;
   color: white;
 }
 
@@ -369,18 +372,18 @@ input[type="date"] {
 .table thead th {
   text-align: left;
   padding: 10px 8px;
-  background: #f7f7f9;
+  background: #0f172a;
   border-bottom: 1px solid var(--line);
   font-weight: 600;
 }
 
 .table tbody td {
   padding: 10px 8px;
-  border-bottom: 1px solid #f0f1f5;
+  border-bottom: 1px solid #111827;
 }
 
 .table tbody tr:hover {
-  background: #fafbff;
+  background: #0f172a;
 }
 
 .table tbody tr.active-row {
@@ -390,7 +393,7 @@ input[type="date"] {
 .table tfoot td {
   padding: 10px 8px;
   font-weight: 700;
-  background: #fbfbfd;
+  background: #0f172a;
 }
 
 .text-right {
@@ -414,15 +417,15 @@ input[type="date"] {
 }
 
 .action-btn {
-  background: #ffe5d2;
-  color: #d45b00;
-  border-color: #ffd2b2;
+  background: rgba(47, 108, 255, 0.15);
+  color: #7fb0ff;
+  border-color: rgba(47, 108, 255, 0.35);
 }
 
 .action-btn.secondary {
-  background: #d8f1ff;
-  color: #0076b8;
-  border-color: #c3e9ff;
+  background: rgba(14, 165, 233, 0.15);
+  color: #7dd3fc;
+  border-color: rgba(14, 165, 233, 0.3);
 }
 
 .table-footer {
