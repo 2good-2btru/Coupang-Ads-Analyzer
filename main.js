@@ -146,9 +146,6 @@ const els = {
   loadJsonInput: document.getElementById("loadJsonInput"),
   saveBtn: document.getElementById("saveBtn"),
   windowSelect: document.getElementById("windowSelect"),
-  mappingPanel: document.getElementById("mappingPanel"),
-  mappingGrid: document.getElementById("mappingGrid"),
-  applyMapping: document.getElementById("applyMapping"),
   emptyState: document.getElementById("emptyState"),
   dashboardWrap: document.getElementById("dashboardWrap"),
   kpiGrid: document.getElementById("kpiGrid"),
@@ -281,7 +278,7 @@ const handleFile = async (file) => {
     return obj;
   });
 
-  buildMappingUI();
+  processData();
 };
 
 const autoMapColumns = () => {
@@ -301,39 +298,8 @@ const autoMapColumns = () => {
   return mapping;
 };
 
-const buildMappingUI = () => {
+const buildMapping = () => {
   state.mapping = autoMapColumns();
-  els.mappingPanel.classList.remove("hidden");
-  els.mappingGrid.innerHTML = "";
-
-  REQUIRED_FIELDS.forEach((field) => {
-    const wrapper = document.createElement("div");
-    wrapper.className = "mapping-item";
-    const label = document.createElement("label");
-    label.textContent = `${field.label}${field.required ? " *" : ""}`;
-
-    const select = document.createElement("select");
-    const none = document.createElement("option");
-    none.value = "";
-    none.textContent = "없음";
-    select.appendChild(none);
-
-    state.columns.forEach((col) => {
-      const option = document.createElement("option");
-      option.value = col;
-      option.textContent = col;
-      if (state.mapping[field.key] === col) option.selected = true;
-      select.appendChild(option);
-    });
-
-    select.addEventListener("change", (event) => {
-      state.mapping[field.key] = event.target.value;
-    });
-
-    wrapper.appendChild(label);
-    wrapper.appendChild(select);
-    els.mappingGrid.appendChild(wrapper);
-  });
 };
 
 const normalizeRows = () => {
@@ -995,27 +961,8 @@ const selectCampaign = (name) => {
   renderCampaignView("base");
 };
 
-const handleApplyMapping = () => {
-  const requiredKeys = ["campaign", "impressions", "clicks", "cost"];
-  const windowOrders = state.window === "14d" ? "orders14" : "orders1";
-  const windowRevenue = state.window === "14d" ? "revenue14" : "revenue1";
-
-  const missing = requiredKeys
-    .filter((key) => !state.mapping[key])
-    .map((key) => REQUIRED_FIELDS.find((field) => field.key === key)?.label || key);
-
-  if (!state.mapping[windowOrders] && !state.mapping.orders) {
-    missing.push(state.window === "14d" ? "총 주문수(14일)" : "총 주문수(1일)");
-  }
-  if (!state.mapping[windowRevenue] && !state.mapping.revenue) {
-    missing.push(state.window === "14d" ? "총 전환매출액(14일)" : "총 전환매출액(1일)");
-  }
-
-  if (missing.length) {
-    alert(`필수 컬럼이 누락되었습니다: ${missing.join(", ")}`);
-    return;
-  }
-
+const processData = () => {
+  buildMapping();
   state.normalized = normalizeRows();
   buildCampaigns();
   setDefaultRangeFromData();
@@ -1028,13 +975,7 @@ const handleApplyMapping = () => {
 const handleWindowChange = () => {
   state.window = els.windowSelect.value;
   if (!state.rawRows.length) return;
-  state.normalized = normalizeRows();
-  buildCampaigns();
-  setDefaultRangeFromData();
-  renderDashboard();
-  if (state.selectedCampaign) {
-    selectCampaign(state.selectedCampaign.name);
-  }
+  processData();
 };
 
 const applyDate = (startInput, endInput) => {
@@ -1172,7 +1113,6 @@ els.fileInput.addEventListener("change", (event) => {
   handleFile(file);
 });
 
-els.applyMapping.addEventListener("click", handleApplyMapping);
 els.saveBtn.addEventListener("click", handleSave);
 els.loadJsonInput.addEventListener("change", (event) => handleLoad(event.target.files[0]));
 els.windowSelect.addEventListener("change", handleWindowChange);
