@@ -497,6 +497,12 @@ const handleFile = async (file) => {
   processData();
 };
 
+const getStorageKeyForUser = () => {
+  const auth = getAuth();
+  const username = auth?.username || "guest";
+  return `${STORAGE_KEY}::${username}`;
+};
+
 const saveToStorage = () => {
   if (!state.rawRows.length || !state.columns.length) return;
   const payload = {
@@ -508,12 +514,12 @@ const saveToStorage = () => {
     dateRange: state.dateRange,
     selectedCampaign: state.selectedCampaign?.name || null,
   };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  localStorage.setItem(getStorageKeyForUser(), JSON.stringify(payload));
 };
 
 const loadFromStorage = () => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(getStorageKeyForUser());
     if (!raw) return false;
     const payload = JSON.parse(raw);
     if (!payload.rawRows || !payload.columns) return false;
@@ -534,6 +540,23 @@ const loadFromStorage = () => {
   } catch {
     return false;
   }
+};
+
+const resetAppState = () => {
+  state.rawRows = [];
+  state.columns = [];
+  state.mapping = {};
+  state.normalized = [];
+  state.campaigns = [];
+  state.selectedCampaign = null;
+  state.dateRange = { start: null, end: null };
+  els.startDate.value = "";
+  els.endDate.value = "";
+  els.startDateCampaign.value = "";
+  els.endDateCampaign.value = "";
+  renderDashboard();
+  renderCampaignTable();
+  if (els.campaignName) els.campaignName.textContent = "-";
 };
 
 const autoMapColumns = () => {
@@ -1535,6 +1558,8 @@ els.loginForm.addEventListener("submit", (event) => {
   }
   setAuth({ username, loggedInAt: new Date().toISOString() });
   updateAuthUI(true);
+  resetAppState();
+  loadFromStorage();
   showView("dashboard");
 });
 
@@ -1564,6 +1589,8 @@ els.signupForm.addEventListener("submit", (event) => {
   saveUsers(users);
   setAuth({ username, loggedInAt: new Date().toISOString() });
   updateAuthUI(true);
+  resetAppState();
+  loadFromStorage();
   showView("dashboard");
 });
 
@@ -1574,6 +1601,7 @@ els.loginTopBtn.addEventListener("click", () => {
 els.logoutTopBtn.addEventListener("click", () => {
   setAuth(null);
   updateAuthUI(false);
+  resetAppState();
 });
 
 els.loginTabBtn.addEventListener("click", () => setAuthMode("login"));
@@ -1605,6 +1633,8 @@ const setupDragAndDrop = () => {
 };
 
 setupDragAndDrop();
-loadFromStorage();
 updateAuthUI(!!getAuth());
+if (getAuth()) {
+  loadFromStorage();
+}
 setAuthMode("login");
