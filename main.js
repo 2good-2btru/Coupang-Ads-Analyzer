@@ -13,6 +13,7 @@ const state = {
 };
 
 const STORAGE_KEY = "coupang-dashboard::autosave";
+const VAT_MULTIPLIER = 1.1;
 
 const REQUIRED_FIELDS = [
   {
@@ -196,6 +197,12 @@ const toNumber = (value) => {
   const cleaned = String(value).replace(/[^0-9eE.+-]/g, "");
   const parsed = parseFloat(cleaned);
   return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const getCostWithVat = (row) => {
+  if (!row) return 0;
+  if (row.costVatApplied) return toNumber(row.cost);
+  return toNumber(row.cost) * VAT_MULTIPLIER;
 };
 
 const getCellSortValue = (cell) => {
@@ -480,7 +487,6 @@ const normalizeRows = () => {
     mapped[use14d ? "revenue14" : "revenue1"] || mapped.revenue || "";
   const salesCol =
     mapped[use14d ? "sales14" : "sales1"] || mapped.sales || "";
-  const applyVat = (value) => toNumber(value) * 1.1;
   const inferDateValue = (row) => {
     for (const key of state.columns) {
       const value = row[key];
@@ -503,7 +509,8 @@ const normalizeRows = () => {
     impressions: toNumber(row[mapped.impressions]),
     clicks: toNumber(row[mapped.clicks]),
     orders: toNumber(row[ordersCol]),
-    cost: applyVat(row[mapped.cost]),
+    cost: toNumber(row[mapped.cost]),
+    costVatApplied: false,
     revenue: toNumber(row[revenueCol]),
     sales: toNumber(row[salesCol]) || toNumber(row[ordersCol]),
     area: normalizeArea(row[mapped.area]),
@@ -542,7 +549,7 @@ const buildTotals = (rows) => {
       acc.impressions += row.impressions;
       acc.clicks += row.clicks;
       acc.orders += row.orders;
-      acc.cost += row.cost;
+      acc.cost += getCostWithVat(row);
       acc.revenue += row.revenue;
       acc.sales += row.sales;
       return acc;
@@ -589,7 +596,7 @@ const renderChart = (rows) => {
       map.set(key, { date: key, cost: 0, revenue: 0 });
     }
     const item = map.get(key);
-    item.cost += row.cost;
+    item.cost += getCostWithVat(row);
     item.revenue += row.revenue;
   });
 
@@ -766,7 +773,7 @@ const renderBaseStats = (rows) => {
     item.totals.impressions += row.impressions;
     item.totals.clicks += row.clicks;
     item.totals.orders += row.orders;
-    item.totals.cost += row.cost;
+    item.totals.cost += getCostWithVat(row);
     item.totals.revenue += row.revenue;
   });
 
@@ -915,7 +922,7 @@ const renderOptions = (rows) => {
     }
     const item = map.get(key);
     item.totals.sales += row.sales;
-    item.totals.cost += row.cost;
+    item.totals.cost += getCostWithVat(row);
     item.totals.revenue += row.revenue;
     item.totals.impressions += row.impressions;
     item.totals.clicks += row.clicks;
@@ -986,7 +993,7 @@ const renderKeywords = (rows) => {
     item.totals.impressions += row.impressions;
     item.totals.clicks += row.clicks;
     item.totals.orders += row.orders;
-    item.totals.cost += row.cost;
+    item.totals.cost += getCostWithVat(row);
     item.totals.revenue += row.revenue;
   });
 
@@ -1302,8 +1309,9 @@ const handleSave = () => {
   }
 
   const payload = {
-    version: 1,
+    version: 2,
     createdAt: new Date().toISOString(),
+    vatIncluded: false,
     mapping: state.mapping,
     rows: state.normalized,
     dateRange: state.dateRange,
@@ -1330,7 +1338,11 @@ const handleLoad = async (file) => {
   }
 
   state.mapping = payload.mapping || {};
-  state.normalized = payload.rows;
+  const vatIncluded = payload.vatIncluded === true;
+  state.normalized = payload.rows.map((row) => ({
+    ...row,
+    costVatApplied: vatIncluded || row.costVatApplied === true,
+  }));
   state.window = payload.window || "1d";
   els.windowSelect.value = state.window;
 
