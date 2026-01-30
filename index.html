@@ -85,15 +85,6 @@
   <main class="campaign hidden" id="campaignView">
     <select id="campaignSelect" class="sr-only" aria-hidden="true" tabindex="-1"></select>
 
-    <div class="campaign-tabs" id="campaignTabs">
-      <button data-tab="base" class="active">기본통계</button>
-      <button data-tab="sold">팔린 옵션</button>
-      <button data-tab="options">전체 옵션</button>
-      <button data-tab="keywords">전체 키워드</button>
-      <button data-tab="excluded">제외 키워드 <span id="excludedCount" class="badge">0</span></button>
-      <button data-tab="manual">수동 입찰가 관리 <span class="badge">0</span></button>
-    </div>
-
     <section class="panel filter-panel">
       <div class="filter-row">
         <div class="field">
@@ -153,6 +144,32 @@
         </div>
         <p id="campaignSectionDesc" class="muted"></p>
         <button class="ghost">메모</button>
+        <div class="campaign-tabs" id="campaignTabs">
+          <button data-tab="base" class="active">
+            기본통계
+            <span class="tab-desc">ROAS가 높은 노출영역으로 예산이 잘 쓰이고 있는지 확인하세요.</span>
+          </button>
+          <button data-tab="sold">
+            팔린 옵션
+            <span class="tab-desc">해당 광고캠페인에서 어떤 옵션이 팔렸는지 확인하세요.</span>
+          </button>
+          <button data-tab="options">
+            전체 옵션
+            <span class="tab-desc">판매가 낮은 옵션은 광고 캠페인에서 OFF 하세요.</span>
+          </button>
+          <button data-tab="keywords">
+            전체 키워드
+            <span class="tab-desc">성과가 없는 키워드는 제외키워드로 등록하세요.</span>
+          </button>
+          <button data-tab="excluded">
+            제외 키워드 <span id="excludedCount" class="badge">0</span>
+            <span class="tab-desc">제외 키워드를 관리할 수 있습니다.</span>
+          </button>
+          <button data-tab="manual">
+            수동 입찰가 관리 <span class="badge">0</span>
+            <span class="tab-desc">수동 입찰가 관리 항목을 관리합니다.</span>
+          </button>
+        </div>
       </div>
 
       <div id="tab-base" class="tab-panel"></div>

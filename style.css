@@ -333,23 +333,39 @@ input[type="date"] {
 
 .campaign-tabs {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  overflow: hidden;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+  margin-top: 8px;
 }
 
 .campaign-tabs button {
-  border: none;
-  background: var(--soft);
-  padding: 12px 10px;
+  border: 1px solid var(--line);
+  background: transparent;
+  padding: 10px 12px;
   font-weight: 600;
   color: var(--ink);
+  text-align: left;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .campaign-tabs button.active {
-  background: #1f2937;
-  color: white;
+  background: #f1f5ff;
+  color: #3b82f6;
+  border-color: rgba(59, 130, 246, 0.35);
+}
+
+.tab-desc {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.campaign-tabs button.active .tab-desc {
+  color: #3b82f6;
 }
 
 .badge {
@@ -368,7 +384,7 @@ input[type="date"] {
 
 .content-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
@@ -439,6 +455,14 @@ input[type="date"] {
 
 .table tbody tr:hover {
   background: #0f172a;
+}
+
+#campaignTable tbody tr {
+  cursor: pointer;
+}
+
+#campaignTable tbody tr.total-row {
+  cursor: default;
 }
 
 .table tbody tr.active-row {

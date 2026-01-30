@@ -1173,7 +1173,7 @@ const renderCampaignTabs = (tab) => {
   };
 
   els.campaignSectionTitle.textContent = titleMap[tab];
-  els.campaignSectionDesc.textContent = descMap[tab];
+  els.campaignSectionDesc.textContent = "";
 };
 
 const renderCampaignView = (tab = "base") => {
