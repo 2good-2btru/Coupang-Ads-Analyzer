@@ -13,6 +13,7 @@ const state = {
 };
 
 const STORAGE_KEY = "coupang-dashboard::autosave";
+const AUTH_KEY = "coupang-dashboard::auth";
 const VAT_MULTIPLIER = 1.1;
 
 const REQUIRED_FIELDS = [
@@ -165,6 +166,14 @@ const els = {
   applyDate: document.getElementById("applyDate"),
   dashboardView: document.getElementById("dashboardView"),
   campaignView: document.getElementById("campaignView"),
+  loginView: document.getElementById("loginView"),
+  loginForm: document.getElementById("loginForm"),
+  loginId: document.getElementById("loginId"),
+  loginPw: document.getElementById("loginPw"),
+  loginTopBtn: document.getElementById("loginTopBtn"),
+  logoutTopBtn: document.getElementById("logoutTopBtn"),
+  mainNav: document.getElementById("mainNav"),
+  appActions: document.getElementById("appActions"),
   campaignSelect: document.getElementById("campaignSelect"),
   campaignTable: document.getElementById("campaignTable"),
   campaignTabs: document.getElementById("campaignTabs"),
@@ -198,6 +207,33 @@ const toNumber = (value) => {
   const cleaned = String(value).replace(/[^0-9eE.+-]/g, "");
   const parsed = parseFloat(cleaned);
   return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const getAuth = () => {
+  try {
+    const raw = localStorage.getItem(AUTH_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
+const setAuth = (value) => {
+  if (!value) {
+    localStorage.removeItem(AUTH_KEY);
+    return;
+  }
+  localStorage.setItem(AUTH_KEY, JSON.stringify(value));
+};
+
+const updateAuthUI = (loggedIn) => {
+  els.loginView.classList.toggle("hidden", loggedIn);
+  els.dashboardView.classList.toggle("hidden", !loggedIn);
+  els.campaignView.classList.toggle("hidden", !loggedIn);
+  els.loginTopBtn.classList.toggle("hidden", loggedIn);
+  els.logoutTopBtn.classList.toggle("hidden", !loggedIn);
+  els.mainNav.classList.toggle("hidden", !loggedIn);
+  els.appActions.classList.toggle("hidden", !loggedIn);
 };
 
 const getCostWithVat = (row) => {
@@ -1455,6 +1491,28 @@ document.querySelectorAll(".nav-item").forEach((item) => {
   });
 });
 
+els.loginForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const username = els.loginId.value.trim();
+  const password = els.loginPw.value.trim();
+  if (!username || !password) {
+    alert("아이디와 비밀번호를 입력해주세요.");
+    return;
+  }
+  setAuth({ username, loggedInAt: new Date().toISOString() });
+  updateAuthUI(true);
+  showView("dashboard");
+});
+
+els.loginTopBtn.addEventListener("click", () => {
+  updateAuthUI(false);
+});
+
+els.logoutTopBtn.addEventListener("click", () => {
+  setAuth(null);
+  updateAuthUI(false);
+});
+
 const setupDragAndDrop = () => {
   const target = els.emptyState;
   if (!target) return;
@@ -1482,3 +1540,4 @@ const setupDragAndDrop = () => {
 
 setupDragAndDrop();
 loadFromStorage();
+updateAuthUI(!!getAuth());

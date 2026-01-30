@@ -92,6 +92,17 @@ h1 {
   gap: 12px;
 }
 
+.auth-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.app-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 button,
 .file-btn {
   border: 1px solid var(--accent);
@@ -271,6 +282,44 @@ input[type="date"] {
 .empty {
   text-align: center;
   padding: 80px 20px;
+}
+
+.login-view {
+  display: flex;
+  justify-content: center;
+  padding: 48px 20px;
+}
+
+.login-panel {
+  max-width: 520px;
+  width: 100%;
+  text-align: center;
+}
+
+.login-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+  text-align: left;
+}
+
+.login-form label {
+  display: grid;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.login-form input {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #0f172a;
+  color: var(--ink);
+}
+
+.login-form button {
+  margin-top: 6px;
+  width: 100%;
 }
 
 .empty.drag-over {

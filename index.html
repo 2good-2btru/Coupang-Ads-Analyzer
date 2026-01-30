@@ -13,7 +13,7 @@
       <div class="logo">Q</div>
       <h1>QUANTEL</h1>
     </div>
-    <nav class="nav">
+    <nav class="nav" id="mainNav">
       <button class="nav-item active" data-view="dashboard">대시보드</button>
       <button class="nav-item" data-view="campaign">광고 캠페인 분석</button>
       <button class="nav-item" disabled>광고성과 검색</button>
@@ -21,23 +21,50 @@
       <button class="nav-item" disabled>설정</button>
     </nav>
     <div class="actions">
-      <label class="file-btn ghost">
-        엑셀 업로드
-        <input id="fileInput" type="file" accept=".xlsx,.xls" />
-      </label>
-      <select id="windowSelect" aria-label="전환 기준">
-        <option value="1d">1일 기준</option>
-        <option value="14d">14일 기준</option>
-      </select>
-      <button id="saveBtn" class="ghost">분석 저장</button>
-      <label class="ghost file-btn">
-        저장 불러오기
-        <input id="loadJsonInput" type="file" accept=".json" />
-      </label>
-      <div class="icon-btn">🔔</div>
-      <div class="icon-btn">👤</div>
+      <div class="auth-actions">
+        <button id="loginTopBtn" class="ghost">로그인</button>
+        <button id="logoutTopBtn" class="ghost hidden">로그아웃</button>
+      </div>
+      <div class="app-actions" id="appActions">
+        <label class="file-btn ghost">
+          엑셀 업로드
+          <input id="fileInput" type="file" accept=".xlsx,.xls" />
+        </label>
+        <select id="windowSelect" aria-label="전환 기준">
+          <option value="1d">1일 기준</option>
+          <option value="14d">14일 기준</option>
+        </select>
+        <button id="saveBtn" class="ghost">분석 저장</button>
+        <label class="ghost file-btn">
+          저장 불러오기
+          <input id="loadJsonInput" type="file" accept=".json" />
+        </label>
+        <div class="icon-btn">🔔</div>
+        <div class="icon-btn">👤</div>
+      </div>
     </div>
   </header>
+
+  <main class="login-view" id="loginView">
+    <section class="panel login-panel">
+      <h2>환영합니다</h2>
+      <p class="muted">
+        본 사이트는 쿠팡 광고 캠페인을 효율적으로 운영하기 위해 만들어졌습니다.
+        캠페인을 최적화해서 매출을 증대시켜 보세요.
+      </p>
+      <form id="loginForm" class="login-form">
+        <label>
+          아이디
+          <input id="loginId" type="text" autocomplete="username" />
+        </label>
+        <label>
+          비밀번호
+          <input id="loginPw" type="password" autocomplete="current-password" />
+        </label>
+        <button id="loginBtn" type="submit" class="primary">로그인</button>
+      </form>
+    </section>
+  </main>
 
   <main class="dashboard" id="dashboardView">
     <section class="panel filter-panel">
