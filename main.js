@@ -137,7 +137,7 @@ const REQUIRED_FIELDS = [
     key: "saleDate",
     label: "날짜",
     required: false,
-    guesses: ["날짜", "판매일", "주문일", "date"],
+    guesses: ["날짜", "판매일", "주문일", "집계일", "집계일자", "일자", "기간", "date"],
   },
 ];
 
@@ -241,15 +241,15 @@ const parseDate = (value) => {
   if (value instanceof Date) return value;
   if (typeof value === "number") {
     // Excel serial date support
-    const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+    const excelEpoch = new Date(1899, 11, 30);
     const date = new Date(excelEpoch.getTime() + value * 86400000);
     return Number.isNaN(date.getTime()) ? null : date;
   }
-  const text = String(value).trim();
+  const text = String(value).trim().replace(/^'+/, "");
   if (!text) return null;
   if (/^\\d+$/.test(text) && parseInt(text, 10) > 30000) {
     const serial = parseInt(text, 10);
-    const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+    const excelEpoch = new Date(1899, 11, 30);
     const date = new Date(excelEpoch.getTime() + serial * 86400000);
     return Number.isNaN(date.getTime()) ? null : date;
   }
@@ -257,6 +257,13 @@ const parseDate = (value) => {
     const y = parseInt(text.slice(0, 4), 10);
     const m = parseInt(text.slice(4, 6), 10);
     const d = parseInt(text.slice(6, 8), 10);
+    return new Date(y, m - 1, d);
+  }
+  const korean = text.match(/(\\d{4})\\s*년\\s*(\\d{1,2})\\s*월\\s*(\\d{1,2})\\s*일/);
+  if (korean) {
+    const y = parseInt(korean[1], 10);
+    const m = parseInt(korean[2], 10);
+    const d = parseInt(korean[3], 10);
     return new Date(y, m - 1, d);
   }
   const normalized = text.replace(/[./]/g, "-");
