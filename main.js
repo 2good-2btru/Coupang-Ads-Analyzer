@@ -196,6 +196,62 @@ const toNumber = (value) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+const getCellSortValue = (cell) => {
+  const raw = (cell?.textContent || "").trim();
+  if (!raw) return { type: "string", value: "" };
+  const numeric = toNumber(raw);
+  if (Number.isFinite(numeric) && /[0-9]/.test(raw)) {
+    return { type: "number", value: numeric };
+  }
+  return { type: "string", value: raw.toLowerCase() };
+};
+
+const attachTableSort = (table) => {
+  if (!table || table.dataset.sortReady === "true") return;
+  const headers = Array.from(table.querySelectorAll("thead th"));
+  if (!headers.length) return;
+  table.dataset.sortReady = "true";
+
+  headers.forEach((th, index) => {
+    th.style.cursor = "pointer";
+    th.addEventListener("click", () => {
+      const tbody = table.querySelector("tbody");
+      if (!tbody) return;
+      const rows = Array.from(tbody.querySelectorAll("tr"));
+      if (!rows.length) return;
+
+      const totalRows = rows.filter((row) =>
+        row.textContent?.includes("합계")
+      );
+      const dataRows = rows.filter((row) => !totalRows.includes(row));
+
+      const current = th.dataset.sortDir || "none";
+      const next = current === "asc" ? "desc" : "asc";
+      headers.forEach((h) => {
+        h.dataset.sortDir = "";
+      });
+      th.dataset.sortDir = next;
+
+      dataRows.sort((a, b) => {
+        const aCell = a.children[index];
+        const bCell = b.children[index];
+        const aVal = getCellSortValue(aCell);
+        const bVal = getCellSortValue(bCell);
+        if (aVal.type === "number" && bVal.type === "number") {
+          return next === "asc" ? aVal.value - bVal.value : bVal.value - aVal.value;
+        }
+        if (aVal.value < bVal.value) return next === "asc" ? -1 : 1;
+        if (aVal.value > bVal.value) return next === "asc" ? 1 : -1;
+        return 0;
+      });
+
+      tbody.innerHTML = "";
+      dataRows.forEach((row) => tbody.appendChild(row));
+      totalRows.forEach((row) => tbody.appendChild(row));
+    });
+  });
+};
+
 const normalizeHeader = (value) =>
   String(value || "")
     .toLowerCase()
@@ -404,7 +460,10 @@ const normalizeRows = () => {
     revenue: toNumber(row[revenueCol]),
     sales: toNumber(row[salesCol]) || toNumber(row[ordersCol]),
     area: normalizeArea(row[mapped.area]),
-    keyword: String(row[mapped.keyword] || "").trim(),
+    keyword: (() => {
+      const raw = String(row[mapped.keyword] || "").trim();
+      return raw === "-" ? "" : raw;
+    })(),
     optionId: String(row[mapped.optionId] || "").trim(),
     optionName: String(row[mapped.optionName] || "").trim(),
     saleDate: (() => {
@@ -1025,12 +1084,16 @@ const renderCampaignView = (tab = "base") => {
 
   if (tab === "base") {
     els.tabBase.innerHTML = renderBaseStats(rows);
+    attachTableSort(els.tabBase.querySelector("table"));
   } else if (tab === "sold") {
     els.tabSold.innerHTML = renderSoldOptions(rows);
+    attachTableSort(els.tabSold.querySelector("table"));
   } else if (tab === "options") {
     els.tabOptions.innerHTML = renderOptions(rows);
+    attachTableSort(els.tabOptions.querySelector("table"));
   } else if (tab === "keywords") {
     els.tabKeywords.innerHTML = renderKeywords(rows);
+    attachTableSort(els.tabKeywords.querySelector("table"));
 
     const searchInput = document.getElementById("keywordSearch");
     const searchBtn = document.getElementById("keywordSearchBtn");
@@ -1057,6 +1120,7 @@ const renderCampaignView = (tab = "base") => {
     }
   } else if (tab === "excluded") {
     els.tabExcluded.innerHTML = renderExcluded();
+    attachTableSort(els.tabExcluded.querySelector("table"));
     els.tabExcluded.querySelectorAll(".remove-excluded").forEach((btn) => {
       btn.addEventListener("click", (event) => {
         const keyword = event.target.closest("tr")?.dataset.keyword;
