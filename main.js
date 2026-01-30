@@ -191,7 +191,7 @@ const fmtPercent = (value) => `${fmtNumber(value, 2)}%`;
 const toNumber = (value) => {
   if (value === null || value === undefined) return 0;
   if (typeof value === "number") return value;
-  const cleaned = String(value).replace(/[^0-9.-]/g, "");
+  const cleaned = String(value).replace(/[^0-9eE.+-]/g, "");
   const parsed = parseFloat(cleaned);
   return Number.isFinite(parsed) ? parsed : 0;
 };
@@ -262,6 +262,24 @@ const parseDate = (value) => {
   }
   const text = String(value).trim().replace(/^'+/, "");
   if (!text) return null;
+  if (/[eE]/.test(text)) {
+    const num = Number(text);
+    if (Number.isFinite(num)) {
+      const intVal = Math.trunc(num);
+      if (intVal >= 19000101 && intVal <= 21001231) {
+        const s = String(intVal);
+        const y = parseInt(s.slice(0, 4), 10);
+        const m = parseInt(s.slice(4, 6), 10);
+        const d = parseInt(s.slice(6, 8), 10);
+        return new Date(y, m - 1, d);
+      }
+      if (intVal > 30000) {
+        const excelEpoch = new Date(1899, 11, 30);
+        const date = new Date(excelEpoch.getTime() + intVal * 86400000);
+        return Number.isNaN(date.getTime()) ? null : date;
+      }
+    }
+  }
   if (/^\\d+$/.test(text) && parseInt(text, 10) > 30000) {
     const serial = parseInt(text, 10);
     const excelEpoch = new Date(1899, 11, 30);
@@ -371,6 +389,7 @@ const normalizeRows = () => {
         if (/^\\d{8}$/.test(text)) return text;
         if (/^\\d{4}[-/.]\\d{1,2}[-/.]\\d{1,2}/.test(text)) return text;
         if (/^\\d+$/.test(text) && parseInt(text, 10) > 30000) return text;
+        if (/[eE]/.test(text)) return text;
       }
     }
     return "";
@@ -388,7 +407,14 @@ const normalizeRows = () => {
     keyword: String(row[mapped.keyword] || "").trim(),
     optionId: String(row[mapped.optionId] || "").trim(),
     optionName: String(row[mapped.optionName] || "").trim(),
-    saleDate: String(row[mapped.saleDate] || inferDateValue(row) || "").trim(),
+    saleDate: (() => {
+      let value = row[mapped.saleDate];
+      if (value === undefined || value === null || value === "") {
+        value = inferDateValue(row);
+      }
+      if (typeof value === "string") return value.trim();
+      return value || "";
+    })(),
   }));
 };
 
