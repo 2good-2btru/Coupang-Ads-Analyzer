@@ -405,15 +405,29 @@ const handleFile = async (file) => {
 
   const headers = rows[0].map((h) => String(h).trim());
   const body = rows.slice(1).filter((row) => row.some((cell) => String(cell).trim()));
+  const normalizedHeaders = headers.map((h) => normalizeHeader(h));
 
-  state.columns = headers;
-  state.rawRows = body.map((row) => {
+  if (!state.columns.length) {
+    state.columns = headers;
+  } else {
+    const currentNormalized = state.columns.map((h) => normalizeHeader(h));
+    const sameShape =
+      currentNormalized.length === normalizedHeaders.length &&
+      currentNormalized.every((value, index) => value === normalizedHeaders[index]);
+    if (!sameShape) {
+      alert("기존 데이터와 엑셀 형식이 달라 병합할 수 없습니다. 같은 형식의 리포트를 업로드해주세요.");
+      return;
+    }
+  }
+
+  const newRows = body.map((row) => {
     const obj = {};
     headers.forEach((header, index) => {
       obj[header] = row[index];
     });
     return obj;
   });
+  state.rawRows = [...state.rawRows, ...newRows];
 
   processData();
 };
