@@ -215,6 +215,9 @@ const attachTableSort = (table) => {
   table.dataset.sortReady = "true";
 
   headers.forEach((th, index) => {
+    th.classList.add("sortable");
+    th.dataset.sortDir = "none";
+    th.setAttribute("aria-sort", "none");
     th.style.cursor = "pointer";
     th.addEventListener("click", () => {
       const tbody = table.querySelector("tbody");
@@ -230,9 +233,11 @@ const attachTableSort = (table) => {
       const current = th.dataset.sortDir || "none";
       const next = current === "asc" ? "desc" : "asc";
       headers.forEach((h) => {
-        h.dataset.sortDir = "";
+        h.dataset.sortDir = "none";
+        h.setAttribute("aria-sort", "none");
       });
       th.dataset.sortDir = next;
+      th.setAttribute("aria-sort", next === "asc" ? "ascending" : "descending");
 
       dataRows.sort((a, b) => {
         const aCell = a.children[index];

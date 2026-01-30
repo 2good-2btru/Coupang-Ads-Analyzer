@@ -382,6 +382,31 @@ input[type="date"] {
   font-weight: 600;
 }
 
+.table thead th.sortable {
+  position: relative;
+  padding-right: 22px;
+}
+
+.table thead th.sortable::after {
+  content: "↕";
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.table thead th.sortable[data-sort-dir="asc"]::after {
+  content: "▲";
+  color: #7fb0ff;
+}
+
+.table thead th.sortable[data-sort-dir="desc"]::after {
+  content: "▼";
+  color: #7fb0ff;
+}
+
 .table tbody td {
   padding: 10px 8px;
   border-bottom: 1px solid #111827;
@@ -400,14 +425,16 @@ input[type="date"] {
   background: #e9ecff;
 }
 
-#campaignTable tbody tr:hover td,
-#campaignTable tbody tr.active-row td {
+#campaignTable tbody tr:hover td {
   color: #111827 !important;
 }
 
-#campaignTable tbody tr:hover,
-#campaignTable tbody tr.active-row {
+#campaignTable tbody tr:hover {
   color: #111827;
+}
+
+#campaignTable tbody tr.active-row td {
+  color: var(--ink);
 }
 
 input[type="date"]::-webkit-calendar-picker-indicator {
