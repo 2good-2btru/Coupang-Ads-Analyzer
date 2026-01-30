@@ -314,8 +314,8 @@ input[type="date"] {
 
 .campaign-name {
   font-weight: 700;
-  font-size: 16px;
-  color: var(--ink);
+  font-size: 20px;
+  color: #7fb0ff;
 }
 
 .campaign-title select {
