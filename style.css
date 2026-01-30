@@ -390,6 +390,20 @@ input[type="date"] {
   background: #f1f0ff;
 }
 
+#campaignTable tbody tr:hover {
+  background: #e9ecff;
+}
+
+#campaignTable tbody tr:hover td,
+#campaignTable tbody tr.active-row td {
+  color: #111827 !important;
+}
+
+#campaignTable tbody tr:hover,
+#campaignTable tbody tr.active-row {
+  color: #111827;
+}
+
 .table tfoot td {
   padding: 10px 8px;
   font-weight: 700;
