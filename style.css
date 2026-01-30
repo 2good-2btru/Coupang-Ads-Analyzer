@@ -294,6 +294,51 @@ input[type="date"] {
   max-width: 520px;
   width: 100%;
   text-align: center;
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(2, 6, 23, 0.96));
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.55);
+}
+
+.login-hero {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+}
+
+.login-badge {
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.15);
+  color: #7fb0ff;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  font-size: 12px;
+}
+
+.login-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 999px;
+  padding: 6px;
+  margin-top: 18px;
+}
+
+.login-toggle button {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.login-toggle button.active {
+  background: #111c33;
+  color: #7fb0ff;
 }
 
 .login-form {
@@ -312,8 +357,8 @@ input[type="date"] {
 .login-form input {
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid var(--line);
-  background: #0f172a;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(15, 23, 42, 0.8);
   color: var(--ink);
 }
 

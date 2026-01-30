@@ -47,11 +47,18 @@
 
   <main class="login-view" id="loginView">
     <section class="panel login-panel">
-      <h2>환영합니다</h2>
-      <p class="muted">
-        본 사이트는 쿠팡 광고 캠페인을 효율적으로 운영하기 위해 만들어졌습니다.
-        캠페인을 최적화해서 매출을 증대시켜 보세요.
-      </p>
+      <div class="login-hero">
+        <span class="login-badge">QUANTEL</span>
+        <h2>환영합니다</h2>
+        <p class="muted">
+          본 사이트는 쿠팡 광고 캠페인을 효율적으로 운영하기 위해 만들어졌습니다.
+          캠페인을 최적화해서 매출을 증대시켜 보세요.
+        </p>
+      </div>
+      <div class="login-toggle" role="tablist" aria-label="로그인/가입 전환">
+        <button id="loginTabBtn" class="active" type="button">로그인</button>
+        <button id="signupTabBtn" type="button">가입하기</button>
+      </div>
       <form id="loginForm" class="login-form">
         <label>
           아이디
@@ -62,6 +69,21 @@
           <input id="loginPw" type="password" autocomplete="current-password" />
         </label>
         <button id="loginBtn" type="submit" class="primary">로그인</button>
+      </form>
+      <form id="signupForm" class="login-form hidden">
+        <label>
+          아이디
+          <input id="signupId" type="text" autocomplete="username" />
+        </label>
+        <label>
+          비밀번호
+          <input id="signupPw" type="password" autocomplete="new-password" />
+        </label>
+        <label>
+          비밀번호 확인
+          <input id="signupPwConfirm" type="password" autocomplete="new-password" />
+        </label>
+        <button id="signupBtn" type="submit" class="primary">가입하기</button>
       </form>
     </section>
   </main>

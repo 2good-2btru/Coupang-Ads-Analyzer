@@ -14,6 +14,7 @@ const state = {
 
 const STORAGE_KEY = "coupang-dashboard::autosave";
 const AUTH_KEY = "coupang-dashboard::auth";
+const USERS_KEY = "coupang-dashboard::users";
 const VAT_MULTIPLIER = 1.1;
 
 const REQUIRED_FIELDS = [
@@ -170,6 +171,12 @@ const els = {
   loginForm: document.getElementById("loginForm"),
   loginId: document.getElementById("loginId"),
   loginPw: document.getElementById("loginPw"),
+  signupForm: document.getElementById("signupForm"),
+  signupId: document.getElementById("signupId"),
+  signupPw: document.getElementById("signupPw"),
+  signupPwConfirm: document.getElementById("signupPwConfirm"),
+  loginTabBtn: document.getElementById("loginTabBtn"),
+  signupTabBtn: document.getElementById("signupTabBtn"),
   loginTopBtn: document.getElementById("loginTopBtn"),
   logoutTopBtn: document.getElementById("logoutTopBtn"),
   mainNav: document.getElementById("mainNav"),
@@ -218,6 +225,19 @@ const getAuth = () => {
   }
 };
 
+const getUsers = () => {
+  try {
+    const raw = localStorage.getItem(USERS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveUsers = (users) => {
+  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+};
+
 const setAuth = (value) => {
   if (!value) {
     localStorage.removeItem(AUTH_KEY);
@@ -234,6 +254,14 @@ const updateAuthUI = (loggedIn) => {
   els.logoutTopBtn.classList.toggle("hidden", !loggedIn);
   els.mainNav.classList.toggle("hidden", !loggedIn);
   els.appActions.classList.toggle("hidden", !loggedIn);
+};
+
+const setAuthMode = (mode) => {
+  const loginMode = mode === "login";
+  els.loginForm.classList.toggle("hidden", !loginMode);
+  els.signupForm.classList.toggle("hidden", loginMode);
+  els.loginTabBtn.classList.toggle("active", loginMode);
+  els.signupTabBtn.classList.toggle("active", !loginMode);
 };
 
 const getCostWithVat = (row) => {
@@ -1499,6 +1527,41 @@ els.loginForm.addEventListener("submit", (event) => {
     alert("아이디와 비밀번호를 입력해주세요.");
     return;
   }
+  const users = getUsers();
+  const user = users.find((item) => item.username === username);
+  if (!user || user.password !== password) {
+    alert("아이디 또는 비밀번호가 올바르지 않습니다.");
+    return;
+  }
+  setAuth({ username, loggedInAt: new Date().toISOString() });
+  updateAuthUI(true);
+  showView("dashboard");
+});
+
+els.signupForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const username = els.signupId.value.trim();
+  const password = els.signupPw.value.trim();
+  const passwordConfirm = els.signupPwConfirm.value.trim();
+  if (!username || !password || !passwordConfirm) {
+    alert("모든 정보를 입력해주세요.");
+    return;
+  }
+  if (password.length < 4) {
+    alert("비밀번호는 4자 이상으로 설정해주세요.");
+    return;
+  }
+  if (password !== passwordConfirm) {
+    alert("비밀번호가 일치하지 않습니다.");
+    return;
+  }
+  const users = getUsers();
+  if (users.some((item) => item.username === username)) {
+    alert("이미 존재하는 아이디입니다.");
+    return;
+  }
+  users.push({ username, password, createdAt: new Date().toISOString() });
+  saveUsers(users);
   setAuth({ username, loggedInAt: new Date().toISOString() });
   updateAuthUI(true);
   showView("dashboard");
@@ -1512,6 +1575,9 @@ els.logoutTopBtn.addEventListener("click", () => {
   setAuth(null);
   updateAuthUI(false);
 });
+
+els.loginTabBtn.addEventListener("click", () => setAuthMode("login"));
+els.signupTabBtn.addEventListener("click", () => setAuthMode("signup"));
 
 const setupDragAndDrop = () => {
   const target = els.emptyState;
@@ -1541,3 +1607,4 @@ const setupDragAndDrop = () => {
 setupDragAndDrop();
 loadFromStorage();
 updateAuthUI(!!getAuth());
+setAuthMode("login");
