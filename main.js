@@ -291,6 +291,14 @@ const parseDate = (value) => {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
 
+const parseInputDate = (value) => {
+  if (!value) return null;
+  const parts = String(value).split("-").map((v) => parseInt(v, 10));
+  if (parts.length !== 3 || parts.some((v) => !Number.isFinite(v))) return null;
+  const [y, m, d] = parts;
+  return new Date(y, m - 1, d);
+};
+
 const dateToKey = (date) => {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -1077,8 +1085,8 @@ const handleWindowChange = () => {
 };
 
 const applyDate = (startInput, endInput) => {
-  const start = startInput.value ? new Date(startInput.value) : null;
-  const end = endInput.value ? new Date(endInput.value) : null;
+  const start = parseInputDate(startInput.value);
+  const end = parseInputDate(endInput.value);
   if (!start || !end) return;
   setRange(start, end);
 };
