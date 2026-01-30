@@ -273,6 +273,11 @@ input[type="date"] {
   padding: 80px 20px;
 }
 
+.empty.drag-over {
+  border-color: #7fb0ff;
+  background: rgba(127, 176, 255, 0.12);
+}
+
 .hidden {
   display: none;
 }

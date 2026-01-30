@@ -12,6 +12,8 @@ const state = {
   keywordFilter: "",
 };
 
+const STORAGE_KEY = "coupang-dashboard::autosave";
+
 const REQUIRED_FIELDS = [
   {
     key: "campaign",
@@ -402,6 +404,45 @@ const handleFile = async (file) => {
   });
 
   processData();
+};
+
+const saveToStorage = () => {
+  if (!state.rawRows.length || !state.columns.length) return;
+  const payload = {
+    version: 2,
+    columns: state.columns,
+    rawRows: state.rawRows,
+    mapping: state.mapping,
+    window: state.window,
+    dateRange: state.dateRange,
+    selectedCampaign: state.selectedCampaign?.name || null,
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+};
+
+const loadFromStorage = () => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const payload = JSON.parse(raw);
+    if (!payload.rawRows || !payload.columns) return false;
+    state.columns = payload.columns;
+    state.rawRows = payload.rawRows;
+    state.window = payload.window || "1d";
+    els.windowSelect.value = state.window;
+    processData();
+    if (payload.dateRange?.start && payload.dateRange?.end) {
+      const start = new Date(payload.dateRange.start);
+      const end = new Date(payload.dateRange.end);
+      setRange(start, end);
+    }
+    if (payload.selectedCampaign) {
+      selectCampaign(payload.selectedCampaign);
+    }
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 const autoMapColumns = () => {
@@ -1166,6 +1207,7 @@ const processData = () => {
     selectCampaign(state.campaigns[0].name);
   }
   renderCampaignTable();
+  saveToStorage();
 };
 
 const handleWindowChange = () => {
@@ -1304,6 +1346,7 @@ const handleLoad = async (file) => {
     selectCampaign(state.campaigns[0].name);
   }
   renderCampaignTable();
+  saveToStorage();
 };
 
 els.fileInput.addEventListener("change", (event) => {
@@ -1344,3 +1387,31 @@ document.querySelectorAll(".nav-item").forEach((item) => {
     showView(item.dataset.view);
   });
 });
+
+const setupDragAndDrop = () => {
+  const target = els.emptyState;
+  if (!target) return;
+  const prevent = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  };
+  ["dragenter", "dragover"].forEach((type) => {
+    target.addEventListener(type, (event) => {
+      prevent(event);
+      target.classList.add("drag-over");
+    });
+  });
+  ["dragleave", "drop"].forEach((type) => {
+    target.addEventListener(type, (event) => {
+      prevent(event);
+      target.classList.remove("drag-over");
+    });
+  });
+  target.addEventListener("drop", (event) => {
+    const file = event.dataTransfer?.files?.[0];
+    if (file) handleFile(file);
+  });
+};
+
+setupDragAndDrop();
+loadFromStorage();
