@@ -83,11 +83,7 @@
   </main>
 
   <main class="campaign hidden" id="campaignView">
-    <section class="panel campaign-head">
-      <div class="campaign-title">
-        <select id="campaignSelect"></select>
-      </div>
-    </section>
+    <select id="campaignSelect" class="sr-only" aria-hidden="true" tabindex="-1"></select>
 
     <div class="campaign-tabs" id="campaignTabs">
       <button data-tab="base" class="active">기본통계</button>
@@ -151,10 +147,11 @@
 
     <section class="panel" id="campaignContent">
       <div class="content-head">
-        <div>
+        <div class="content-title">
+          <span id="campaignName" class="campaign-name">-</span>
           <h2 id="campaignSectionTitle">기본통계</h2>
-          <p id="campaignSectionDesc" class="muted"></p>
         </div>
+        <p id="campaignSectionDesc" class="muted"></p>
         <button class="ghost">메모</button>
       </div>
 

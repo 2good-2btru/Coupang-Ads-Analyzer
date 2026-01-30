@@ -170,6 +170,7 @@ const els = {
   campaignTabs: document.getElementById("campaignTabs"),
   campaignSectionTitle: document.getElementById("campaignSectionTitle"),
   campaignSectionDesc: document.getElementById("campaignSectionDesc"),
+  campaignName: document.getElementById("campaignName"),
   tabBase: document.getElementById("tab-base"),
   tabSold: document.getElementById("tab-sold"),
   tabOptions: document.getElementById("tab-options"),
@@ -744,6 +745,8 @@ const renderCampaignTable = () => {
   const tbody = els.campaignTable.querySelector("tbody");
   tbody.innerHTML = "";
 
+  const allRows = filterRowsByDate(state.normalized);
+
   state.campaigns.forEach((campaign) => {
     const rows = filterRowsByDate(campaign.rows);
     const totals = buildTotals(rows);
@@ -771,6 +774,26 @@ const renderCampaignTable = () => {
     });
     tbody.appendChild(tr);
   });
+
+  if (allRows.length) {
+    const totals = buildTotals(allRows);
+    const metrics = buildMetric(totals);
+    const totalRow = document.createElement("tr");
+    totalRow.classList.add("total-row");
+    totalRow.innerHTML = `
+      <td>${getDateRangeLabel()}</td>
+      <td><strong>합계</strong></td>
+      <td><strong>${fmtPercent(metrics.roas)}</strong></td>
+      <td><strong>${fmtNumber(metrics.cpc, 0)}원</strong></td>
+      <td><strong>${fmtPercent(metrics.ctr)}</strong></td>
+      <td><strong>${fmtPercent(metrics.cvr)}</strong></td>
+      <td><strong>${fmtNumber(totals.sales)}</strong></td>
+      <td><strong>${fmtNumber(totals.cost)}원</strong></td>
+      <td><strong>${fmtNumber(totals.revenue)}원</strong></td>
+      <td><strong>${fmtNumber(metrics.cpa, 0)}원</strong></td>
+    `;
+    tbody.appendChild(totalRow);
+  }
 };
 
 const renderBaseStats = (rows) => {
@@ -870,23 +893,24 @@ const renderSoldOptions = (rows) => {
   const map = new Map();
 
   filtered.forEach((row) => {
-    const key = `${row.saleDate}||${row.optionName}||${row.keyword}`;
+    const key = `${row.optionId}||${row.optionName}`;
     if (!map.has(key)) {
       map.set(key, {
-        saleDate: row.saleDate || "-",
+        optionId: row.optionId || "-",
         optionName: row.optionName || "-",
-        keyword: row.keyword || "-",
+        sales: 0,
         revenue: 0,
       });
     }
-    map.get(key).revenue += row.revenue;
+    const item = map.get(key);
+    item.sales += row.sales;
+    item.revenue += row.revenue;
   });
 
   const rowsHtml = Array.from(map.values()).map((item) => `
       <tr>
-        <td>${item.saleDate}</td>
         <td>${item.optionName}</td>
-        <td>${item.keyword}</td>
+        <td>${fmtNumber(item.sales)}</td>
         <td class="text-right">${fmtNumber(item.revenue)}원</td>
       </tr>`);
 
@@ -898,19 +922,18 @@ const renderSoldOptions = (rows) => {
       <table class="table">
         <thead>
           <tr>
-            <th>판매일</th>
             <th>옵션명</th>
-            <th>키워드</th>
+            <th>판매수량</th>
             <th>광고매출</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td colspan="4">
+            <td colspan="3">
               광고비 ${fmtNumber(totals.cost)}원 · 광고매출 ROAS ${fmtPercent(metrics.roas)}
             </td>
           </tr>
-          ${rowsHtml.join("") || `<tr><td colspan="4">데이터 없음</td></tr>`}
+          ${rowsHtml.join("") || `<tr><td colspan="3">데이터 없음</td></tr>`}
         </tbody>
       </table>
     </div>`;
@@ -1220,6 +1243,9 @@ const selectCampaign = (name) => {
   state.selectedCampaign = state.campaigns.find((c) => c.name === name) || null;
   if (!state.selectedCampaign) return;
   renderCampaignSelect();
+  if (els.campaignName) {
+    els.campaignName.textContent = state.selectedCampaign.name;
+  }
   renderCampaignView("base");
   showView("campaign");
 };
