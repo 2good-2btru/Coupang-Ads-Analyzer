@@ -756,10 +756,19 @@ const renderCampaignTable = () => {
     if (state.selectedCampaign?.name === campaign.name) {
       tr.classList.add("active-row");
     }
+    const roasClass =
+      metrics.roas >= 600
+        ? "roas-600"
+        : metrics.roas >= 350
+        ? "roas-350"
+        : metrics.roas >= 200
+        ? "roas-200"
+        : "roas-0";
+
     tr.innerHTML = `
       <td>${getDateRangeLabel()}</td>
       <td>${campaign.name}</td>
-      <td>${fmtPercent(metrics.roas)}</td>
+      <td><span class="roas-pill ${roasClass}">${fmtPercent(metrics.roas)}</span></td>
       <td>${fmtNumber(metrics.cpc, 0)}원</td>
       <td>${fmtPercent(metrics.ctr)}</td>
       <td>${fmtPercent(metrics.cvr)}</td>
