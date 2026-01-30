@@ -480,6 +480,7 @@ const normalizeRows = () => {
     mapped[use14d ? "revenue14" : "revenue1"] || mapped.revenue || "";
   const salesCol =
     mapped[use14d ? "sales14" : "sales1"] || mapped.sales || "";
+  const applyVat = (value) => toNumber(value) * 1.1;
   const inferDateValue = (row) => {
     for (const key of state.columns) {
       const value = row[key];
@@ -502,7 +503,7 @@ const normalizeRows = () => {
     impressions: toNumber(row[mapped.impressions]),
     clicks: toNumber(row[mapped.clicks]),
     orders: toNumber(row[ordersCol]),
-    cost: toNumber(row[mapped.cost]),
+    cost: applyVat(row[mapped.cost]),
     revenue: toNumber(row[revenueCol]),
     sales: toNumber(row[salesCol]) || toNumber(row[ordersCol]),
     area: normalizeArea(row[mapped.area]),
