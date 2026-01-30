@@ -387,7 +387,8 @@ input[type="date"] {
 }
 
 .table tbody tr.active-row {
-  background: #f1f0ff;
+  background: transparent;
+  box-shadow: inset 3px 0 0 #7fb0ff;
 }
 
 #campaignTable tbody tr:hover {
@@ -402,6 +403,10 @@ input[type="date"] {
 #campaignTable tbody tr:hover,
 #campaignTable tbody tr.active-row {
   color: #111827;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
 }
 
 .table tfoot td {
