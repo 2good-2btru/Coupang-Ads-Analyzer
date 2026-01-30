@@ -41,7 +41,14 @@ const REQUIRED_FIELDS = [
     key: "orders1",
     label: "총 주문수(1일)",
     required: false,
-    guesses: ["총주문수1일", "총주문수(1일)", "총 주문수(1일)"],
+    guesses: [
+      "총주문수1일",
+      "총주문수(1일)",
+      "총 주문수(1일)",
+      "주문수1일",
+      "주문수(1일)",
+      "주문 수(1일)",
+    ],
   },
   {
     key: "orders14",
@@ -240,6 +247,14 @@ const parseDate = (value) => {
   if (!value) return null;
   if (value instanceof Date) return value;
   if (typeof value === "number") {
+    const intVal = Math.trunc(value);
+    if (intVal === value && intVal >= 19000101 && intVal <= 21001231) {
+      const text = String(intVal);
+      const y = parseInt(text.slice(0, 4), 10);
+      const m = parseInt(text.slice(4, 6), 10);
+      const d = parseInt(text.slice(6, 8), 10);
+      return new Date(y, m - 1, d);
+    }
     // Excel serial date support
     const excelEpoch = new Date(1899, 11, 30);
     const date = new Date(excelEpoch.getTime() + value * 86400000);
